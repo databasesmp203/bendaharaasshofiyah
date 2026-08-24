@@ -59,22 +59,35 @@
 
         @media print {
             body * {
-                visibility: hidden;
+                visibility: hidden !important;
             }
-            #printable-area, #printable-area *,
-            #printable-buku-tabungan, #printable-buku-tabungan *,
-            #printable-buku-gaji, #printable-buku-gaji *,
-            #printable-kartu-spp, #printable-kartu-spp * {
-                visibility: visible;
+            body[data-print-target="printable-area"] #printable-area,
+            body[data-print-target="printable-area"] #printable-area *,
+            body[data-print-target="printable-buku-tabungan"] #printable-buku-tabungan,
+            body[data-print-target="printable-buku-tabungan"] #printable-buku-tabungan *,
+            body[data-print-target="printable-buku-gaji"] #printable-buku-gaji,
+            body[data-print-target="printable-buku-gaji"] #printable-buku-gaji *,
+            body[data-print-target="printable-kartu-spp"] #printable-kartu-spp,
+            body[data-print-target="printable-kartu-spp"] #printable-kartu-spp *,
+            body[data-print-target="printable-passbook-tagihan"] #printable-passbook-tagihan,
+            body[data-print-target="printable-passbook-tagihan"] #printable-passbook-tagihan * {
+                visibility: visible !important;
             }
-            #printable-area, #printable-buku-tabungan, #printable-buku-gaji, #printable-kartu-spp {
+            body[data-print-target="printable-area"] #printable-area,
+            body[data-print-target="printable-buku-tabungan"] #printable-buku-tabungan,
+            body[data-print-target="printable-buku-gaji"] #printable-buku-gaji,
+            body[data-print-target="printable-kartu-spp"] #printable-kartu-spp,
+            body[data-print-target="printable-passbook-tagihan"] #printable-passbook-tagihan {
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 100%;
+                margin: 0;
+                padding: 10px;
             }
-            .no-print {
+            .no-print, .no-print * {
                 display: none !important;
+                visibility: hidden !important;
             }
         }
 
@@ -89,6 +102,15 @@
         .nav-tab:hover {
             color: #f8fafc;
             background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+        .animate-shake {
+            animation: shake 0.35s ease-in-out;
         }
     </style>
 </head>
@@ -172,8 +194,8 @@
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-    <!-- PIN Lock Overlay -->
-    <div id="app-pin-lock-overlay" class="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center p-4 hidden">
+    <!-- PIN Lock Overlay (Aktif Secara Default Saat Aplikasi Dibuka) -->
+    <div id="app-pin-lock-overlay" class="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-sm w-full text-center space-y-6 shadow-2xl relative overflow-hidden">
             <div class="absolute -top-10 -left-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
             <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
@@ -192,7 +214,7 @@
                     <input type="password" maxlength="6" id="pin-input-field" onkeyup="handlePinInputKeyup(event)" class="w-48 text-center text-2xl font-mono tracking-[0.4em] px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 font-bold" placeholder="••••">
                 </div>
                 <p id="pin-error-msg" class="text-xs font-bold text-rose-400 hidden"><i class="fa-solid fa-circle-exclamation mr-1"></i> PIN Salah! Silakan coba lagi.</p>
-                <p class="text-[11px] text-slate-500"> <span class="font-mono font-bold text-slate-400"></span></p>
+                <p class="text-[11px] text-slate-500">PIN Default: <span class="font-mono font-bold text-slate-400">1234</span></p>
             </div>
 
             <button onclick="verifyPin()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center space-x-2 active:scale-95">
@@ -1272,6 +1294,14 @@
                             <option value="10">Baris 10</option>
                         </select>
                     </div>
+                    <div class="flex items-center space-x-2">
+                        <label class="text-xs font-bold text-slate-700 shrink-0"><i class="fa-solid fa-filter text-amber-600 mr-1"></i> Mode Cetak:</label>
+                        <select id="ptagbook-print-mode" onchange="renderPassbookTagihanContent()" class="px-2.5 py-2 bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800">
+                            <option value="ALL">Semua Baris Data</option>
+                            <option value="CHECKED_PRESERVE">Hanya Baris Dicentang (Preserve Posisi Baris)</option>
+                            <option value="CHECKED_COMPACT">Hanya Baris Dicentang (Sembunyikan Lainnya)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="flex items-center space-x-2">
@@ -1330,6 +1360,9 @@
                     <table class="w-full text-xs border-collapse font-mono">
                         <thead>
                             <tr class="bg-slate-800 text-amber-300 font-bold text-center text-[11px] uppercase tracking-wider border-b-2 border-slate-600">
+                                <th class="p-2 border-r border-slate-600 w-8 no-print">
+                                    <input type="checkbox" id="ptagbook-check-all" checked onchange="toggleAllPtagbookCheckboxes(this)" class="rounded text-amber-500 focus:ring-amber-400 cursor-pointer" title="Pilih Semua Baris">
+                                </th>
                                 <th class="p-2 border-r border-slate-600 w-10">NO</th>
                                 <th class="p-2 border-r border-slate-600 text-left">ID & JENIS TAGIHAN</th>
                                 <th class="p-2 border-r border-slate-600 w-20">SANDI</th>
@@ -1457,7 +1490,7 @@
                         <p class="text-slate-500">Mengetahui,</p>
                         <p class="font-bold text-slate-900 mt-1">Kepala Sekolah</p>
                         <div class="h-12"></div>
-                        <p class="font-bold text-slate-900" id="bgaji-kepsek-nama">( Dr. H. Ahmad Dahlan, M.Pd )</p>
+                        <p class="font-bold text-slate-900" id="bgaji-kepsek-nama">( K.H. Ahmad Zakaria, S.Pd.I )</p>
                     </div>
                     <div class="text-center">
                         <p class="text-slate-500" id="bgaji-tgl-cetak">Cirebon, 1 Agustus 2026</p>
@@ -1943,7 +1976,6 @@
             return DEFAULT_GAS_WEB_APP_URL.trim();
         }
 
-        // Default Seed Data
         const defaultSettings = {
             schoolName: "SMP IT NU Asshofiyah Balad",
             schoolAddress: "Jl. Balad No. 12, Balad, Cirebon, Jawa Barat",
@@ -2021,6 +2053,7 @@
         let pendingConfirmAction = null;
         let selectedBtabRows = {};
         let selectedKsppRows = {};
+        let selectedPtagbookRows = {};
 
         function toggleAllBtabCheckboxes(masterCheckbox) {
             const isChecked = masterCheckbox.checked;
@@ -2044,6 +2077,17 @@
             renderKartuSPPContent();
         }
 
+        function toggleAllPtagbookCheckboxes(masterCheckbox) {
+            const isChecked = masterCheckbox.checked;
+            const checkboxes = document.querySelectorAll('.ptagbook-row-cb');
+            checkboxes.forEach(cb => {
+                cb.checked = isChecked;
+                const rowId = cb.getAttribute('data-row-id');
+                if (rowId) selectedPtagbookRows[rowId] = isChecked;
+            });
+            renderPassbookTagihanContent();
+        }
+
         function onBtabRowCheckChange(cb) {
             const rowId = cb.getAttribute('data-row-id');
             if (rowId) {
@@ -2058,6 +2102,14 @@
                 selectedKsppRows[rowId] = cb.checked;
             }
             renderKartuSPPContent();
+        }
+
+        function onPtagbookRowCheckChange(cb) {
+            const rowId = cb.getAttribute('data-row-id');
+            if (rowId) {
+                selectedPtagbookRows[rowId] = cb.checked;
+            }
+            renderPassbookTagihanContent();
         }
 
         function formatRupiah(angka) {
@@ -2652,303 +2704,6 @@
             renderManageRapbsTable();
         }
 
-        function deleteCashTrx(trxId) {
-            const trx = transactions.find(t => t.id === trxId);
-            if (!trx) return;
-
-            showConfirmModal(
-                "Hapus Transaksi Kas",
-                `Apakah Anda yakin ingin menghapus transaksi "${trx.keterangan || trx.kategori}" (${formatRupiah(trx.nominal)}) dari Buku Kas Umum?`,
-                function() {
-                    transactions = transactions.filter(t => t.id !== trxId);
-                    saveState();
-                    renderAll();
-                    showNotification("Transaksi kas berhasil dihapus.", "info");
-                }
-            );
-        }
-
-        function onKasJenisChanged() {
-            const jenis = document.getElementById('kas-jenis').value;
-            const select = document.getElementById('kas-kategori-rapbs');
-            if (!select) return;
-
-            select.innerHTML = '';
-            const filtered = rapbsList.filter(r => r.tipe === jenis);
-            filtered.forEach(r => {
-                const opt = document.createElement('option');
-                opt.value = r.nama;
-                opt.textContent = `[${r.kode}] ${r.nama}`;
-                select.appendChild(opt);
-            });
-        }
-
-        function renderManageRapbsTable() {
-            const tbody = document.getElementById('manage-rapbs-tbody');
-            if (!tbody) return;
-
-            tbody.innerHTML = '';
-            rapbsList.forEach(r => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="p-1.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${r.tipe === 'MASUK' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${r.tipe}</span></td>
-                    <td class="p-1.5 font-mono font-bold">${r.kode}</td>
-                    <td class="p-1.5">${r.nama}</td>
-                    <td class="p-1.5 text-right font-bold">${formatRupiah(r.target)}</td>
-                    <td class="p-1.5 text-center">
-                        <button onclick="deleteRapbsPos('${r.id}')" class="text-rose-600 hover:text-rose-800"><i class="fa-solid fa-trash-can"></i></button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        function populateSiswaSelects() {
-            const kelasSelect = document.getElementById('siswa-filter-kelas');
-            if (kelasSelect) {
-                const uniqueKelas = [...new Set(siswaList.map(s => s.kelas))];
-                kelasSelect.innerHTML = '<option value="">-- Semua Kelas --</option>';
-                uniqueKelas.forEach(k => {
-                    const opt = document.createElement('option');
-                    opt.value = k;
-                    opt.textContent = k;
-                    kelasSelect.appendChild(opt);
-                });
-            }
-
-            const dropdowns = ['tsetor-siswa-id', 'ttarik-siswa-id', 'ntag-siswa-id', 'btab-select-siswa', 'kspp-select-siswa', 'ptagbook-select-siswa'];
-            dropdowns.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) {
-                    el.innerHTML = '';
-                    siswaList.forEach(s => {
-                        const opt = document.createElement('option');
-                        opt.value = s.id;
-                        opt.textContent = `${s.nama} (${s.kelas}) - NISN: ${s.nisn}`;
-                        el.appendChild(opt);
-                    });
-                }
-            });
-        }
-
-        function openSiswaModal(siswaId = null) {
-            const titleEl = document.getElementById('modal-siswa-title');
-            if (siswaId) {
-                const siswa = siswaList.find(s => s.id === siswaId);
-                if (!siswa) return;
-                document.getElementById('siswa-id').value = siswa.id;
-                document.getElementById('siswa-nisn').value = siswa.nisn;
-                document.getElementById('siswa-nama').value = siswa.nama;
-                document.getElementById('siswa-kelas').value = siswa.kelas;
-                document.getElementById('siswa-wa').value = siswa.wa || '';
-                if (titleEl) titleEl.textContent = 'Edit Data Siswa';
-            } else {
-                document.getElementById('form-siswa').reset();
-                document.getElementById('siswa-id').value = '';
-                if (titleEl) titleEl.textContent = 'Pendaftaran Siswa Baru';
-            }
-            openModal('modal-siswa');
-        }
-
-        function submitSiswa(e) {
-            e.preventDefault();
-            const id = document.getElementById('siswa-id').value;
-            const nisn = document.getElementById('siswa-nisn').value;
-            const nama = document.getElementById('siswa-nama').value;
-            const kelas = document.getElementById('siswa-kelas').value;
-            const wa = document.getElementById('siswa-wa').value;
-
-            if (id) {
-                const index = siswaList.findIndex(s => s.id === id);
-                if (index !== -1) {
-                    siswaList[index].nisn = nisn;
-                    siswaList[index].nama = nama;
-                    siswaList[index].kelas = kelas;
-                    siswaList[index].wa = wa;
-                }
-                showNotification(`Data siswa ${nama} berhasil diperbarui!`, 'success');
-            } else {
-                const newSiswa = {
-                    id: 'SIS-' + String(Date.now()).slice(-4),
-                    nisn: nisn,
-                    nama: nama,
-                    kelas: kelas,
-                    wa: wa,
-                    saldoTabungan: 0
-                };
-                siswaList.push(newSiswa);
-                showNotification(`Siswa ${nama} berhasil didaftarkan!`, 'success');
-            }
-
-            saveState();
-            renderAll();
-            closeModal('modal-siswa');
-            document.getElementById('form-siswa').reset();
-        }
-
-        function deleteSiswa(siswaId) {
-            const siswa = siswaList.find(s => s.id === siswaId);
-            if (!siswa) return;
-
-            showConfirmModal(
-                "Hapus Data Siswa",
-                `Apakah Anda yakin ingin menghapus siswa "${siswa.nama}"? Data akan dihapus dari sistem.`,
-                function() {
-                    siswaList = siswaList.filter(s => s.id !== siswaId);
-                    saveState();
-                    renderAll();
-                    showNotification(`Data siswa ${siswa.nama} berhasil dihapus.`, 'info');
-                }
-            );
-        }
-
-        function openPaySPPModal(siswaId, bulan) {
-            const siswa = siswaList.find(s => s.id === siswaId);
-            if (!siswa) return;
-            document.getElementById('spp-siswa-id').value = siswaId;
-            document.getElementById('spp-bulan-code').value = bulan;
-            document.getElementById('spp-target-nama').textContent = siswa.nama;
-            document.getElementById('spp-target-bulan').textContent = `${bulan} (Tahun Ajaran 2026/2027)`;
-            document.getElementById('spp-nominal').value = settings.standardSPP || 250000;
-            document.getElementById('spp-keterangan').value = `Pembayaran SPP Bulan ${bulan} - ${siswa.nama}`;
-            openModal('modal-pay-spp');
-        }
-
-        function submitPaySPP(e) {
-            e.preventDefault();
-            const siswaId = document.getElementById('spp-siswa-id').value;
-            const bulan = document.getElementById('spp-bulan-code').value;
-            const nominal = Number(document.getElementById('spp-nominal').value);
-            const metode = document.getElementById('spp-metode').value;
-            const ket = document.getElementById('spp-keterangan').value;
-
-            const siswa = siswaList.find(s => s.id === siswaId);
-            if (!siswa) return;
-
-            if (metode === 'Autodebet Tabungan') {
-                if ((siswa.saldoTabungan || 0) < nominal) {
-                    showNotification("Saldo tabungan siswa tidak mencukupi untuk autodebet!", "error");
-                    return;
-                }
-                siswa.saldoTabungan -= nominal;
-                tabunganTrx.push({
-                    id: 'TAB-' + String(Date.now()).slice(-4),
-                    siswaId: siswaId,
-                    tipe: 'TARIK',
-                    sandi: settings.sandiAutodebet || '102-DBT',
-                    nominal: nominal,
-                    tanggal: new Date().toISOString().split('T')[0],
-                    keterangan: `Autodebet SPP Bulan ${bulan}`
-                });
-            }
-
-            const recId = 'SPP-' + String(Date.now()).slice(-4);
-            sppRecords.push({
-                id: recId,
-                siswaId: siswaId,
-                bulan: bulan,
-                tahun: "2026/2027",
-                lunas: true,
-                tglBayar: new Date().toISOString().split('T')[0],
-                nominal: nominal,
-                metode: metode
-            });
-
-            transactions.push({
-                id: 'TRX-' + String(Date.now()).slice(-4),
-                refId: recId,
-                tgl: new Date().toISOString().split('T')[0],
-                tanggal: new Date().toISOString().split('T')[0],
-                jenis: 'MASUK',
-                kategori: 'SPP Bulanan Siswa',
-                nominal: nominal,
-                metode: metode,
-                siswaId: siswaId,
-                keterangan: ket || `Pembayaran SPP Bulan ${bulan} - ${siswa.nama}`
-            });
-
-            saveState();
-            renderAll();
-            closeModal('modal-pay-spp');
-            showNotification(`Pembayaran SPP Bulan ${bulan} untuk ${siswa.nama} berhasil!`, "success");
-            openThermalSlip('SPP', recId);
-        }
-
-        function openTagihanModal(tagId = null) {
-            const titleEl = document.getElementById('modal-tagihan-title');
-            if (tagId) {
-                const tag = tagihanList.find(t => t.id === tagId);
-                if (!tag) return;
-                document.getElementById('ntag-id').value = tag.id;
-                document.getElementById('ntag-siswa-id').value = tag.siswaId;
-                document.getElementById('ntag-jenis').value = tag.jenisTagihan;
-                document.getElementById('ntag-nominal').value = tag.nominalTagihan;
-                if (titleEl) titleEl.textContent = 'Edit Tagihan Non-SPP';
-            } else {
-                document.getElementById('form-tagihan-baru').reset();
-                document.getElementById('ntag-id').value = '';
-                if (titleEl) titleEl.textContent = 'Buat Tagihan Non-SPP Baru';
-            }
-            openModal('modal-tagihan-baru');
-        }
-
-        function submitTagihanBaru(e) {
-            e.preventDefault();
-            const id = document.getElementById('ntag-id').value;
-            const siswaId = document.getElementById('ntag-siswa-id').value;
-            const jenis = document.getElementById('ntag-jenis').value;
-            const nominal = Number(document.getElementById('ntag-nominal').value);
-
-            if (id) {
-                const index = tagihanList.findIndex(t => t.id === id);
-                if (index !== -1) {
-                    tagihanList[index].siswaId = siswaId;
-                    tagihanList[index].jenisTagihan = jenis;
-                    tagihanList[index].nominalTagihan = nominal;
-                    if (tagihanList[index].dibayar >= nominal) {
-                        tagihanList[index].status = 'LUNAS';
-                    } else if (tagihanList[index].dibayar > 0) {
-                        tagihanList[index].status = 'CICIL';
-                    } else {
-                        tagihanList[index].status = 'UNPAID';
-                    }
-                }
-                showNotification("Tagihan berhasil diperbarui!", "success");
-            } else {
-                tagihanList.push({
-                    id: 'TAG-' + String(Date.now()).slice(-4),
-                    siswaId: siswaId,
-                    jenisTagihan: jenis,
-                    nominalTagihan: nominal,
-                    dibayar: 0,
-                    status: 'UNPAID',
-                    metode: 'Tunai'
-                });
-                showNotification("Tagihan baru berhasil diterbitkan!", "success");
-            }
-
-            saveState();
-            renderAll();
-            closeModal('modal-tagihan-baru');
-            document.getElementById('form-tagihan-baru').reset();
-        }
-
-        function deleteTagihan(tagId) {
-            const tag = tagihanList.find(t => t.id === tagId);
-            if (!tag) return;
-
-            showConfirmModal(
-                "Hapus Tagihan",
-                `Apakah Anda yakin ingin menghapus tagihan ${tag.jenisTagihan} (${tag.id})?`,
-                function() {
-                    tagihanList = tagihanList.filter(t => t.id !== tagId);
-                    saveState();
-                    renderAll();
-                    showNotification("Tagihan berhasil dihapus.", "info");
-                }
-            );
-        }
-
         function openGuruModal(guruId = null) {
             const titleEl = document.getElementById('modal-guru-title');
             if (guruId) {
@@ -2988,39 +2743,23 @@
             const norek = document.getElementById('guru-norek').value;
 
             if (id) {
-                const index = guruList.findIndex(g => g.id === id);
-                if (index !== -1) {
-                    guruList[index].nip = nip;
-                    guruList[index].nama = nama;
-                    guruList[index].wa = wa;
-                    guruList[index].jabatan = jabatan;
-                    guruList[index].gapok = gapok;
-                    guruList[index].tunjangan = tunjangan;
-                    guruList[index].honorJam = honorJam;
-                    guruList[index].honorHadir = honorHadir;
-                    guruList[index].norek = norek;
+                const idx = guruList.findIndex(g => g.id === id);
+                if (idx !== -1) {
+                    guruList[idx] = { id, nip, nama, wa, jabatan, gapok, tunjangan, honorJam, honorHadir, norek };
                 }
-                showNotification(`Data pegawai ${nama} berhasil diperbarui!`, 'success');
+                showNotification(`Data pegawai ${nama} diperbarui!`, "success");
             } else {
-                guruList.push({
+                const newGuru = {
                     id: 'GUR-' + String(Date.now()).slice(-4),
-                    nip: nip,
-                    nama: nama,
-                    wa: wa,
-                    jabatan: jabatan,
-                    gapok: gapok,
-                    tunjangan: tunjangan,
-                    honorJam: honorJam,
-                    honorHadir: honorHadir,
-                    norek: norek
-                });
-                showNotification(`Pegawai ${nama} berhasil ditambahkan!`, 'success');
+                    nip, nama, wa, jabatan, gapok, tunjangan, honorJam, honorHadir, norek
+                };
+                guruList.push(newGuru);
+                showNotification(`Pegawai ${nama} berhasil ditambahkan!`, "success");
             }
 
             saveState();
             renderAll();
             closeModal('modal-guru');
-            document.getElementById('form-guru').reset();
         }
 
         function deleteGuru(guruId) {
@@ -3028,112 +2767,108 @@
             if (!g) return;
 
             showConfirmModal(
-                "Hapus Pegawai",
+                "Hapus Data Pegawai",
                 `Apakah Anda yakin ingin menghapus data pegawai "${g.nama}"?`,
                 function() {
                     guruList = guruList.filter(item => item.id !== guruId);
                     saveState();
                     renderAll();
-                    showNotification(`Data pegawai ${g.nama} berhasil dihapus.`, 'info');
+                    showNotification(`Pegawai ${g.nama} telah dihapus.`, "info");
                 }
             );
+        }
+
+        function openPayrollModal(guruId) {
+            const g = guruList.find(item => item.id === guruId);
+            if (!g) return;
+
+            document.getElementById('pay-guru-id').value = g.id;
+            document.getElementById('pay-target-nama').textContent = g.nama + ` (${g.nip})`;
+            document.getElementById('pay-target-jabatan').textContent = g.jabatan;
+            document.getElementById('pay-jam').value = 24;
+            document.getElementById('pay-hadir').value = 20;
+            document.getElementById('pay-potongan').value = 0;
+
+            const container = document.getElementById('pay-kegiatan-container');
+            if (container) {
+                container.innerHTML = '';
+                addHonorKegiatanRow('Panitia Ujian / Extra', 150000);
+            }
+
+            openModal('modal-payroll');
         }
 
         function addHonorKegiatanRow(ket = '', nominal = 0) {
             const container = document.getElementById('pay-kegiatan-container');
             if (!container) return;
-            
-            const rowId = 'keg-row-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+
             const div = document.createElement('div');
-            div.id = rowId;
-            div.className = 'flex items-center space-x-2 bg-white p-2 rounded-lg border border-slate-200 shadow-sm';
+            div.className = 'flex items-center space-x-2 pay-kegiatan-row';
             div.innerHTML = `
-                <div class="flex-1">
-                    <input type="text" value="${ket}" placeholder="Ket. Kegiatan (cth: Panitia PPDB)" class="pay-keg-ket w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                </div>
-                <div class="w-32">
-                    <input type="number" value="${nominal}" placeholder="Nominal (Rp)" class="pay-keg-nom w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold text-emerald-700 focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                </div>
-                <button type="button" onclick="removeHonorKegiatanRow('${rowId}')" class="p-1.5 text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors shrink-0" title="Hapus Baris">
+                <input type="text" placeholder="Nama Kegiatan / Tugas" value="${ket}" class="pay-keg-ket flex-1 px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-purple-500">
+                <input type="number" placeholder="Nominal Rp" value="${nominal}" class="pay-keg-nom w-32 px-2.5 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-bold focus:ring-2 focus:ring-purple-500">
+                <button type="button" onclick="this.parentElement.remove()" class="w-8 h-8 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
                     <i class="fa-solid fa-trash-can text-xs"></i>
                 </button>
             `;
             container.appendChild(div);
         }
 
-        function removeHonorKegiatanRow(rowId) {
-            const el = document.getElementById(rowId);
-            if (el) el.remove();
-        }
-
-        function openPayrollModal(guruId) {
-            const guru = guruList.find(g => g.id === guruId);
-            if (!guru) return;
-
-            document.getElementById('pay-guru-id').value = guruId;
-            document.getElementById('pay-target-nama').textContent = guru.nama;
-            document.getElementById('pay-target-jabatan').textContent = `${guru.jabatan} (NIP: ${guru.nip})`;
-            
-            const container = document.getElementById('pay-kegiatan-container');
-            if (container) container.innerHTML = '';
-            addHonorKegiatanRow('', 0);
-
-            if (document.getElementById('pay-potongan')) document.getElementById('pay-potongan').value = 0;
-            
-            openModal('modal-payroll');
-        }
-
         function submitPayroll(e) {
             e.preventDefault();
             const guruId = document.getElementById('pay-guru-id').value;
-            const bulan = document.getElementById('pay-bulan').value;
-            const jam = Number(document.getElementById('pay-jam').value);
-            const hadir = Number(document.getElementById('pay-hadir').value);
+            const g = guruList.find(item => item.id === guruId);
+            if (!g) return;
+
+            const periode = document.getElementById('pay-bulan').value;
+            const jamMengajar = Number(document.getElementById('pay-jam').value);
+            const hariHadir = Number(document.getElementById('pay-hadir').value);
             const potongan = Number(document.getElementById('pay-potongan').value);
 
-            const guru = guruList.find(g => g.id === guruId);
-            if (!guru) return;
+            const honorJamTotal = jamMengajar * g.honorJam;
+            const honorHadirTotal = hariHadir * g.honorHadir;
 
-            const kegiatanRows = document.querySelectorAll('#pay-kegiatan-container > div');
+            const kegRows = document.querySelectorAll('.pay-kegiatan-row');
+            let honorKegiatanTotal = 0;
             const honorKegiatanList = [];
-            let totalHonorKegiatan = 0;
 
-            kegiatanRows.forEach(row => {
-                const ket = row.querySelector('.pay-keg-ket')?.value.trim() || '';
-                const nom = Number(row.querySelector('.pay-keg-nom')?.value || 0);
-                if (nom > 0 || ket !== '') {
-                    honorKegiatanList.push({ ket: ket || 'Honor Kegiatan', nominal: nom });
-                    totalHonorKegiatan += nom;
+            kegRows.forEach(row => {
+                const ketInput = row.querySelector('.pay-keg-ket');
+                const nomInput = row.querySelector('.pay-keg-nom');
+                if (ketInput && nomInput) {
+                    const ket = ketInput.value.trim();
+                    const nom = Number(nomInput.value) || 0;
+                    if (nom > 0 || ket !== '') {
+                        honorKegiatanTotal += nom;
+                        honorKegiatanList.push({ ket: ket || 'Kegiatan Tambahan', nominal: nom });
+                    }
                 }
             });
 
-            const ketKegiatanJoined = honorKegiatanList.map(k => k.ket).join(', ');
-
-            const honorJamTotal = jam * (guru.honorJam || 0);
-            const honorHadirTotal = hadir * (guru.honorHadir || 0);
-            const gross = (guru.gapok || 0) + (guru.tunjangan || 0) + honorJamTotal + honorHadirTotal + totalHonorKegiatan;
-            const thp = gross - potongan;
-
+            const thp = (g.gapok + g.tunjangan + honorJamTotal + honorHadirTotal + honorKegiatanTotal) - potongan;
             const payId = 'PAY-' + String(Date.now()).slice(-4);
-            payrollHistory.push({
+
+            const payRecord = {
                 id: payId,
-                guruId: guruId,
-                periode: bulan,
+                guruId: g.id,
+                periode: periode,
                 tanggal: new Date().toISOString().split('T')[0],
-                gapok: guru.gapok,
-                tunjangan: guru.tunjangan,
-                jamMengajar: jam,
-                tarifJam: guru.honorJam,
+                gapok: g.gapok,
+                tunjangan: g.tunjangan,
+                jamMengajar: jamMengajar,
+                tarifJam: g.honorJam,
                 honorJamTotal: honorJamTotal,
-                hariHadir: hadir,
-                tarifHadir: guru.honorHadir,
+                hariHadir: hariHadir,
+                tarifHadir: g.honorHadir,
                 honorHadirTotal: honorHadirTotal,
-                honorKegiatan: totalHonorKegiatan,
-                ketKegiatan: ketKegiatanJoined,
+                honorKegiatan: honorKegiatanTotal,
+                ketKegiatan: honorKegiatanList.map(item => item.ket).join(', '),
                 honorKegiatanList: honorKegiatanList,
                 potongan: potongan,
                 thp: thp
-            });
+            };
+
+            payrollHistory.push(payRecord);
 
             transactions.push({
                 id: 'TRX-' + String(Date.now()).slice(-4),
@@ -3143,17 +2878,15 @@
                 jenis: 'KELUAR',
                 kategori: 'Payroll Gaji & Tunjangan Pegawai',
                 nominal: thp,
-                metode: 'Transfer Bank',
-                guruId: guruId,
-                keterangan: `Gaji Periode ${bulan} - ${guru.nama}`
+                metode: g.norek ? 'Transfer Bank' : 'Tunai',
+                keterangan: `Gaji Periode ${periode} - ${g.nama}`
             });
 
             saveState();
             renderAll();
             closeModal('modal-payroll');
-            
+            showNotification(`Slip Gaji ${g.nama} berhasil dicairkan!`, "success");
             openThermalSlip('PAYROLL', payId);
-            showNotification(`Pencairan gaji ${guru.nama} berhasil!`, 'success');
         }
 
         function submitTabunganSetor(e) {
@@ -3166,8 +2899,8 @@
             if (!siswa) return;
 
             siswa.saldoTabungan = (siswa.saldoTabungan || 0) + nominal;
-
             const tabId = 'TAB-' + String(Date.now()).slice(-4);
+
             tabunganTrx.push({
                 id: tabId,
                 siswaId: siswaId,
@@ -3178,13 +2911,24 @@
                 keterangan: ket || 'Setor Tunai Tabungan'
             });
 
+            transactions.push({
+                id: 'TRX-' + String(Date.now()).slice(-4),
+                refId: tabId,
+                tgl: new Date().toISOString().split('T')[0],
+                tanggal: new Date().toISOString().split('T')[0],
+                jenis: 'MASUK',
+                kategori: 'Setoran Tabungan Siswa',
+                nominal: nominal,
+                metode: 'Tunai',
+                siswaId: siswaId,
+                keterangan: `Setor Tabungan - ${siswa.nama}`
+            });
+
             saveState();
             renderAll();
             closeModal('modal-tabungan-setor');
-            document.getElementById('form-tabungan-setor').reset();
-
+            showNotification(`Setoran tabungan ${formatRupiah(nominal)} untuk ${siswa.nama} berhasil!`, "success");
             openThermalSlip('TABUNGAN', tabId);
-            showNotification(`Setoran Rp ${formatRupiah(nominal)} untuk ${siswa.nama} berhasil!`, 'success');
         }
 
         function submitTabunganTarik(e) {
@@ -3197,13 +2941,13 @@
             if (!siswa) return;
 
             if ((siswa.saldoTabungan || 0) < nominal) {
-                showNotification("Saldo tabungan siswa tidak mencukupi!", "error");
+                showNotification(`Saldo tabungan ${siswa.nama} tidak mencukupi! (Saldo: ${formatRupiah(siswa.saldoTabungan)})`, "error");
                 return;
             }
 
             siswa.saldoTabungan -= nominal;
-
             const tabId = 'TAB-' + String(Date.now()).slice(-4);
+
             tabunganTrx.push({
                 id: tabId,
                 siswaId: siswaId,
@@ -3214,22 +2958,35 @@
                 keterangan: ket || 'Penarikan Tunai Mandiri'
             });
 
+            transactions.push({
+                id: 'TRX-' + String(Date.now()).slice(-4),
+                refId: tabId,
+                tgl: new Date().toISOString().split('T')[0],
+                tanggal: new Date().toISOString().split('T')[0],
+                jenis: 'KELUAR',
+                kategori: 'Penarikan Tabungan Siswa',
+                nominal: nominal,
+                metode: 'Tunai',
+                siswaId: siswaId,
+                keterangan: `Penarikan Tabungan - ${siswa.nama}`
+            });
+
             saveState();
             renderAll();
             closeModal('modal-tabungan-tarik');
-            document.getElementById('form-tabungan-tarik').reset();
-
+            showNotification(`Penarikan tabungan ${formatRupiah(nominal)} untuk ${siswa.nama} berhasil!`, "success");
             openThermalSlip('TABUNGAN', tabId);
-            showNotification(`Penarikan Rp ${formatRupiah(nominal)} untuk ${siswa.nama} berhasil!`, 'success');
         }
 
         function openPayTagihanModal(tagId) {
             const tag = tagihanList.find(t => t.id === tagId);
             if (!tag) return;
 
+            const siswa = siswaList.find(s => s.id === tag.siswaId) || { nama: '-' };
             const sisa = tag.nominalTagihan - tag.dibayar;
-            document.getElementById('ptag-id').value = tagId;
-            document.getElementById('ptag-jenis-text').textContent = tag.jenisTagihan;
+
+            document.getElementById('ptag-id').value = tag.id;
+            document.getElementById('ptag-jenis-text').textContent = `${tag.jenisTagihan} - ${siswa.nama}`;
             document.getElementById('ptag-sisa-text').textContent = formatRupiah(sisa);
             document.getElementById('ptag-nominal').value = sisa;
 
@@ -3247,20 +3004,20 @@
 
             const siswa = siswaList.find(s => s.id === tag.siswaId);
 
-            if (metode === 'Autodebet Tabungan') {
-                if (!siswa || (siswa.saldoTabungan || 0) < nominal) {
-                    showNotification("Saldo tabungan siswa tidak mencukupi untuk autodebet!", "error");
+            if (metode === 'Autodebet Tabungan' && siswa) {
+                if ((siswa.saldoTabungan || 0) < nominal) {
+                    showNotification("Saldo tabungan siswa tidak mencukupi untuk autodebet tagihan!", "error");
                     return;
                 }
                 siswa.saldoTabungan -= nominal;
                 tabunganTrx.push({
                     id: 'TAB-' + String(Date.now()).slice(-4),
-                    siswaId: tag.siswaId,
+                    siswaId: siswa.id,
                     tipe: 'TARIK',
                     sandi: settings.sandiAutodebet || '102-DBT',
                     nominal: nominal,
                     tanggal: new Date().toISOString().split('T')[0],
-                    keterangan: `Autodebet Tagihan: ${tag.jenisTagihan}`
+                    keterangan: `Autodebet Tagihan ${tag.jenisTagihan}`
                 });
             }
 
@@ -3277,63 +3034,381 @@
                 tgl: new Date().toISOString().split('T')[0],
                 tanggal: new Date().toISOString().split('T')[0],
                 jenis: 'MASUK',
-                kategori: 'Uang Gedung & Pembangunan',
+                kategori: tag.jenisTagihan,
                 nominal: nominal,
                 metode: metode,
                 siswaId: tag.siswaId,
-                keterangan: `Pembayaran Tagihan ${tag.jenisTagihan} - ${siswa ? siswa.nama : ''}`
+                keterangan: `Pembayaran ${tag.jenisTagihan} - ${siswa ? siswa.nama : ''}`
             });
 
             saveState();
             renderAll();
             closeModal('modal-pay-tagihan');
-            showNotification(`Pembayaran tagihan ${tag.jenisTagihan} berhasil!`, "success");
+            showNotification(`Pembayaran tagihan ${tag.jenisTagihan} sebesar ${formatRupiah(nominal)} berhasil!`, "success");
             openThermalSlip('TAGIHAN', tag.id);
         }
 
+        function submitKasTrx(e) {
+            e.preventDefault();
+            const jenis = document.getElementById('kas-jenis').value;
+            const kategori = document.getElementById('kas-kategori-rapbs').value;
+            const nominal = Number(document.getElementById('kas-nominal').value);
+            const ket = document.getElementById('kas-keterangan').value;
+
+            const trxId = 'TRX-' + String(Date.now()).slice(-4);
+            transactions.push({
+                id: trxId,
+                tgl: new Date().toISOString().split('T')[0],
+                tanggal: new Date().toISOString().split('T')[0],
+                jenis: jenis,
+                kategori: kategori,
+                nominal: nominal,
+                metode: 'Tunai',
+                keterangan: ket
+            });
+
+            saveState();
+            renderAll();
+            closeModal('modal-kas-trx');
+            showNotification("Transaksi kas berhasil dicatat!", "success");
+            openThermalSlip('KAS', trxId);
+        }
+
+        function submitAddRapbsPos(e) {
+            e.preventDefault();
+            const tipe = document.getElementById('mrapbs-tipe').value;
+            const kode = document.getElementById('mrapbs-kode').value;
+            const nama = document.getElementById('mrapbs-nama').value;
+            const target = Number(document.getElementById('mrapbs-target').value);
+
+            const newPos = {
+                id: 'RAPBS-' + String(Date.now()).slice(-4),
+                tipe, kode, nama, target
+            };
+
+            rapbsList.push(newPos);
+            saveState();
+            renderAll();
+            document.getElementById('form-add-rapbs').reset();
+            showNotification(`Pos RAPBS "${nama}" berhasil ditambahkan!`, "success");
+        }
+
+        function deleteRapbsPos(posId) {
+            const pos = rapbsList.find(r => r.id === posId);
+            if (!pos) return;
+
+            showConfirmModal(
+                "Hapus Pos RAPBS",
+                `Apakah Anda yakin ingin menghapus pos anggaran "${pos.nama}" (${pos.kode})?`,
+                function() {
+                    rapbsList = rapbsList.filter(r => r.id !== posId);
+                    saveState();
+                    renderAll();
+                    showNotification(`Pos RAPBS ${pos.nama} telah dihapus.`, "info");
+                }
+            );
+        }
+
+        function openThermalSlip(type, id) {
+            const body = document.getElementById('slip-body-content');
+            const headerTitle = document.getElementById('slip-header-title');
+            const timestamp = document.getElementById('slip-timestamp');
+            const operator = document.getElementById('slip-operator');
+            const phoneInput = document.getElementById('slip-wa-phone-input');
+
+            if (!body) return;
+            body.innerHTML = '';
+            timestamp.textContent = new Date().toLocaleString('id-ID');
+            operator.textContent = `Petugas: ${settings.treasurerName || 'Bendahara'}`;
+
+            let waPhone = '';
+            let waMsg = '';
+
+            if (type === 'SPP') {
+                const rec = sppRecords.find(r => r.id === id);
+                if (rec) {
+                    const siswa = siswaList.find(s => s.id === rec.siswaId) || { nama: '-', kelas: '-', wa: '' };
+                    headerTitle.textContent = "BUKTI PEMBAYARAN SPP";
+                    waPhone = siswa.wa || '';
+                    body.innerHTML = `
+                        <div class="flex justify-between"><span>No. Resi:</span><strong class="font-mono">${rec.id}</strong></div>
+                        <div class="flex justify-between"><span>Tgl Bayar:</span><span>${rec.tglBayar}</span></div>
+                        <div class="flex justify-between"><span>Siswa:</span><strong class="truncate max-w-[150px]">${siswa.nama}</strong></div>
+                        <div class="flex justify-between"><span>Kelas:</span><span>${siswa.kelas}</span></div>
+                        <div class="border-t border-dashed border-slate-300 my-1 pt-1"></div>
+                        <div class="flex justify-between"><span>Bulan SPP:</span><strong class="text-indigo-700">${rec.bulan} (${rec.tahun})</strong></div>
+                        <div class="flex justify-between"><span>Metode:</span><span>${rec.metode || 'Tunai'}</span></div>
+                        <div class="flex justify-between border-t border-slate-300 pt-1 text-sm font-black">
+                            <span>TOTAL:</span>
+                            <span class="text-emerald-700 font-mono">${formatRupiah(rec.nominal)}</span>
+                        </div>
+                    `;
+                    waMsg = `*BUKTI PEMBAYARAN SPP - ${settings.schoolName}*\n\nTerima kasih, pembayaran SPP atas nama *${siswa.nama}* (${siswa.kelas}) bulan *${rec.bulan}* sebesar *${formatRupiah(rec.nominal)}* telah kami terima.\n\nNo Resi: ${rec.id}\nTanggal: ${rec.tglBayar}`;
+                }
+            } else if (type === 'TAGIHAN') {
+                const tag = tagihanList.find(t => t.id === id);
+                if (tag) {
+                    const siswa = siswaList.find(s => s.id === tag.siswaId) || { nama: '-', kelas: '-', wa: '' };
+                    headerTitle.textContent = "KWITANSI PEMBAYARAN TAGIHAN";
+                    waPhone = siswa.wa || '';
+                    const sisa = tag.nominalTagihan - tag.dibayar;
+                    body.innerHTML = `
+                        <div class="flex justify-between"><span>ID Tagihan:</span><strong class="font-mono">${tag.id}</strong></div>
+                        <div class="flex justify-between"><span>Siswa:</span><strong class="truncate max-w-[150px]">${siswa.nama}</strong></div>
+                        <div class="flex justify-between"><span>Jenis:</span><span class="font-semibold">${tag.jenisTagihan}</span></div>
+                        <div class="border-t border-dashed border-slate-300 my-1 pt-1"></div>
+                        <div class="flex justify-between"><span>Total Tagihan:</span><span>${formatRupiah(tag.nominalTagihan)}</span></div>
+                        <div class="flex justify-between"><span>Terbayar:</span><strong class="text-emerald-700">${formatRupiah(tag.dibayar)}</strong></div>
+                        <div class="flex justify-between"><span>Sisa Tunggakan:</span><strong class="text-rose-700">${formatRupiah(sisa)}</strong></div>
+                        <div class="flex justify-between"><span>Status:</span><strong class="uppercase text-indigo-700">${tag.status}</strong></div>
+                    `;
+                    waMsg = `*KWITANSI TAGIHAN NON-SPP - ${settings.schoolName}*\n\nPembayaran *${tag.jenisTagihan}* atas nama *${siswa.nama}* telah dicatat.\nTerbayar: ${formatRupiah(tag.dibayar)}\nSisa Tagihan: ${formatRupiah(sisa)}\nStatus: ${tag.status}`;
+                }
+            } else if (type === 'TABUNGAN') {
+                const tab = tabunganTrx.find(t => t.id === id);
+                if (tab) {
+                    const siswa = siswaList.find(s => s.id === tab.siswaId) || { nama: '-', kelas: '-', wa: '' };
+                    headerTitle.textContent = `STRUK MUTASI TABUNGAN (${tab.tipe})`;
+                    waPhone = siswa.wa || '';
+                    body.innerHTML = `
+                        <div class="flex justify-between"><span>ID Mutasi:</span><strong class="font-mono">${tab.id}</strong></div>
+                        <div class="flex justify-between"><span>No Rekening:</span><span class="font-mono">REK-${siswa.nisn}</span></div>
+                        <div class="flex justify-between"><span>Nasabah:</span><strong class="truncate max-w-[150px]">${siswa.nama}</strong></div>
+                        <div class="border-t border-dashed border-slate-300 my-1 pt-1"></div>
+                        <div class="flex justify-between"><span>Jenis Transaksi:</span><strong class="${tab.tipe === 'SETOR' ? 'text-emerald-700' : 'text-rose-700'}">${tab.tipe === 'SETOR' ? 'SETOR TUNAI' : 'PENARIKAN'}</strong></div>
+                        <div class="flex justify-between"><span>Nominal Mutasi:</span><strong class="font-mono">${formatRupiah(tab.nominal)}</strong></div>
+                        <div class="flex justify-between border-t border-slate-300 pt-1"><span>Saldo Akhir:</span><strong class="text-sky-800 font-mono">${formatRupiah(siswa.saldoTabungan)}</strong></div>
+                    `;
+                    waMsg = `*STRUK BANK SEKOLAH - ${settings.schoolName}*\n\nTransaksi ${tab.tipe} Tabungan Siswa:\nNama: ${siswa.nama}\nNominal: ${formatRupiah(tab.nominal)}\nSaldo Akhir: ${formatRupiah(siswa.saldoTabungan)}`;
+                }
+            } else if (type === 'PAYROLL') {
+                const pay = payrollHistory.find(p => p.id === id);
+                if (pay) {
+                    const g = guruList.find(item => item.id === pay.guruId) || { nama: '-', nip: '-', wa: '' };
+                    headerTitle.textContent = "SLIP GAJI PEGAWAI DIGITAL";
+                    waPhone = g.wa || '';
+                    body.innerHTML = `
+                        <div class="flex justify-between"><span>ID Slip:</span><strong class="font-mono">${pay.id}</strong></div>
+                        <div class="flex justify-between"><span>Pegawai:</span><strong class="truncate max-w-[150px]">${g.nama}</strong></div>
+                        <div class="flex justify-between"><span>Periode:</span><span>${pay.periode}</span></div>
+                        <div class="border-t border-dashed border-slate-300 my-1 pt-1"></div>
+                        <div class="flex justify-between"><span>Gaji Pokok + Tunj:</span><span>${formatRupiah(pay.gapok + pay.tunjangan)}</span></div>
+                        <div class="flex justify-between"><span>Honor Jam (${pay.jamMengajar} Jam):</span><span>${formatRupiah(pay.honorJamTotal)}</span></div>
+                        <div class="flex justify-between"><span>Honor Hadir (${pay.hariHadir} Hari):</span><span>${formatRupiah(pay.honorHadirTotal)}</span></div>
+                        ${pay.honorKegiatan > 0 ? `<div class="flex justify-between"><span>Honor Kegiatan:</span><span>${formatRupiah(pay.honorKegiatan)}</span></div>` : ''}
+                        <div class="flex justify-between text-rose-600"><span>Potongan / Kasbon:</span><span>-${formatRupiah(pay.potongan)}</span></div>
+                        <div class="flex justify-between border-t border-slate-400 pt-1 text-sm font-black text-purple-800">
+                            <span>THP (TAKE HOME PAY):</span>
+                            <span class="font-mono">${formatRupiah(pay.thp)}</span>
+                        </div>
+                    `;
+                    waMsg = `*SLIP GAJI PEGAWAI - ${settings.schoolName}*\n\nYth. ${g.nama}\nDetail Gaji Periode ${pay.periode}:\nGapok & Tunjangan: ${formatRupiah(pay.gapok + pay.tunjangan)}\nHonor Mengajar & Hadir: ${formatRupiah(pay.honorJamTotal + pay.honorHadirTotal)}\nPotongan: ${formatRupiah(pay.potongan)}\n*TOTAL THP (BERSIH): ${formatRupiah(pay.thp)}*`;
+                }
+            } else if (type === 'KAS' || type === 'REF') {
+                const trx = transactions.find(t => t.id === id || t.refId === id);
+                if (trx) {
+                    headerTitle.textContent = `STRUK KAS GENERAL (${trx.jenis})`;
+                    body.innerHTML = `
+                        <div class="flex justify-between"><span>ID Transaksi:</span><strong class="font-mono">${trx.id}</strong></div>
+                        <div class="flex justify-between"><span>Tanggal:</span><span>${trx.tanggal || trx.tgl}</span></div>
+                        <div class="flex justify-between"><span>Kategori:</span><strong class="truncate max-w-[150px]">${trx.kategori || '-'}</strong></div>
+                        <div class="flex justify-between"><span>Keterangan:</span><span>${trx.keterangan || '-'}</span></div>
+                        <div class="border-t border-dashed border-slate-300 my-1 pt-1"></div>
+                        <div class="flex justify-between border-t border-slate-300 pt-1 text-sm font-black">
+                            <span>NOMINAL:</span>
+                            <span class="${trx.jenis === 'MASUK' ? 'text-emerald-700' : 'text-rose-700'} font-mono">${formatRupiah(trx.nominal)}</span>
+                        </div>
+                    `;
+                }
+            }
+
+            phoneInput.value = waPhone;
+            activeWAContext = { phone: waPhone, message: waMsg, type: type, id: id };
+            openModal('modal-thermal-slip');
+        }
+
+        function downloadSlipPDF() {
+            const element = document.getElementById('printable-area');
+            if (!element) return;
+            const opt = {
+                margin: 0.2,
+                filename: `Struk_Transaksi_${Date.now()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: [3.5, 5], orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function printContainer(containerId) {
+            const target = document.getElementById(containerId);
+            if (!target) {
+                showNotification("Target dokumen cetak tidak ditemukan!", "error");
+                return;
+            }
+            // Tag target element on body to focus print on selected container
+            document.body.setAttribute('data-print-target', containerId);
+            window.print();
+        }
+
+        function shareToWhatsAppPDF() {
+            const input = document.getElementById('slip-wa-phone-input');
+            let phone = input ? input.value.trim() : activeWAContext.phone;
+            if (!phone) {
+                showNotification("Masukkan nomor WhatsApp penerima!", "error");
+                return;
+            }
+
+            phone = phone.replace(/[^0-9]/g, '');
+            if (phone.startsWith('0')) {
+                phone = '62' + phone.slice(1);
+            }
+
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(activeWAContext.message)}`;
+            window.open(url, '_blank');
+        }
+
+        function openBukuTabunganModal(siswaId = null) {
+            const select = document.getElementById('btab-select-siswa');
+            if (select && siswaId) {
+                select.value = siswaId;
+            }
+            onSelectBukuTabunganSiswa();
+            openModal('modal-buku-tabungan');
+        }
+
+        function onSelectBukuTabunganSiswa() {
+            const siswaId = document.getElementById('btab-select-siswa').value;
+            const startRow = parseInt(document.getElementById('btab-start-row').value) || 1;
+            const printMode = document.getElementById('btab-print-mode').value;
+
+            const siswa = siswaList.find(s => s.id === siswaId);
+            if (!siswa) return;
+
+            document.getElementById('btab-siswa-nama').textContent = siswa.nama;
+            document.getElementById('btab-siswa-nisn').textContent = siswa.nisn;
+            document.getElementById('btab-siswa-kelas').textContent = siswa.kelas;
+            document.getElementById('btab-norek').textContent = `NO REK: REK-${siswa.nisn}`;
+
+            const tbody = document.getElementById('btab-table-body');
+            tbody.innerHTML = '';
+
+            const list = tabunganTrx.filter(t => t.siswaId === siswaId);
+            let runningBalance = 0;
+            let totalKredit = 0;
+            let totalDebet = 0;
+
+            const rowsToDisplay = [];
+            list.forEach((t, idx) => {
+                const isSetor = t.tipe === 'SETOR';
+                if (isSetor) {
+                    runningBalance += t.nominal;
+                    totalKredit += t.nominal;
+                } else {
+                    runningBalance -= t.nominal;
+                    totalDebet += t.nominal;
+                }
+
+                rowsToDisplay.push({
+                    originalIdx: idx + 1,
+                    date: t.tanggal,
+                    sandi: t.sandi || (isSetor ? '101-STR' : '102-DBT'),
+                    debet: isSetor ? 0 : t.nominal,
+                    kredit: isSetor ? t.nominal : 0,
+                    saldo: runningBalance,
+                    id: t.id
+                });
+            });
+
+            // Start physical row offset padding
+            for (let i = 1; i < startRow; i++) {
+                const tr = document.createElement('tr');
+                tr.className = "h-8 border-b border-slate-200";
+                tr.innerHTML = `<td class="p-2 no-print"></td><td class="p-2 text-center text-slate-300">${i}</td><td colspan="7" class="p-2 text-slate-300 italic text-[10px]">[Baris Kosong Cetakan Fisik]</td>`;
+                tbody.appendChild(tr);
+            }
+
+            rowsToDisplay.forEach((r, idx) => {
+                const rowNum = startRow + idx;
+                const isChecked = selectedBtabRows[r.id] !== false;
+
+                if (printMode === 'CHECKED_COMPACT' && !isChecked) return;
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-amber-100/40 border-b border-slate-300 text-[11px]";
+
+                if (printMode === 'CHECKED_PRESERVE' && !isChecked) {
+                    tr.innerHTML = `
+                        <td class="p-2 text-center border-r border-slate-300 no-print">
+                            <input type="checkbox" data-row-id="${r.id}" onchange="onBtabRowCheckChange(this)" class="btab-row-cb rounded text-amber-500 focus:ring-amber-400 cursor-pointer">
+                        </td>
+                        <td class="p-2 text-center border-r border-slate-300">${rowNum}</td>
+                        <td colspan="6" class="p-2 border-r border-slate-300 text-slate-300 italic text-[10px]">[Sembunyi]</td>
+                        <td class="p-2 no-print"></td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td class="p-2 text-center border-r border-slate-300 no-print">
+                            <input type="checkbox" data-row-id="${r.id}" ${isChecked ? 'checked' : ''} onchange="onBtabRowCheckChange(this)" class="btab-row-cb rounded text-amber-500 focus:ring-amber-400 cursor-pointer">
+                        </td>
+                        <td class="p-2 text-center border-r border-slate-300 font-bold">${rowNum}</td>
+                        <td class="p-2 border-r border-slate-300 font-mono">${r.date}</td>
+                        <td class="p-2 text-center border-r border-slate-300 font-mono text-[10px]">${r.sandi}</td>
+                        <td class="p-2 text-right border-r border-slate-300 font-mono text-rose-700">${r.debet > 0 ? formatRupiah(r.debet) : '-'}</td>
+                        <td class="p-2 text-right border-r border-slate-300 font-mono text-emerald-700">${r.kredit > 0 ? formatRupiah(r.kredit) : '-'}</td>
+                        <td class="p-2 text-right border-r border-slate-300 font-mono font-black text-slate-900">${formatRupiah(r.saldo)}</td>
+                        <td class="p-2 text-center border-r border-slate-300 font-mono text-[10px]">TLR-01</td>
+                        <td class="p-2 text-center no-print">
+                            <button onclick="openThermalSlip('TABUNGAN', '${r.id}')" class="px-2 py-0.5 bg-sky-100 hover:bg-sky-200 text-sky-800 rounded font-bold text-[10px]">Struk</button>
+                        </td>
+                    `;
+                }
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('btab-total-kredit').textContent = formatRupiah(totalKredit);
+            document.getElementById('btab-total-debet').textContent = formatRupiah(totalDebet);
+            document.getElementById('btab-saldo-akhir').textContent = formatRupiah(runningBalance);
+        }
+
+        function downloadPassbookPDF() {
+            const element = document.getElementById('printable-buku-tabungan');
+            if (!element) return;
+            const opt = {
+                margin: 0.3,
+                filename: `Passbook_Tabungan_${Date.now()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
         function openKartuSPPModal(siswaId = null) {
-            populateSiswaSelects();
-            const selectEl = document.getElementById('kspp-select-siswa');
-            if (siswaId && selectEl) {
-                selectEl.value = siswaId;
+            const select = document.getElementById('kspp-select-siswa');
+            if (select && siswaId) {
+                select.value = siswaId;
             }
             renderKartuSPPContent();
             openModal('modal-kartu-spp');
         }
 
         function renderKartuSPPContent() {
-            const selectEl = document.getElementById('kspp-select-siswa');
-            if (!selectEl) return;
-            const siswaId = selectEl.value;
+            const siswaId = document.getElementById('kspp-select-siswa').value;
+            const startRow = parseInt(document.getElementById('kspp-start-row').value) || 1;
+            const printMode = document.getElementById('kspp-print-mode').value;
+
             const siswa = siswaList.find(s => s.id === siswaId);
             if (!siswa) return;
 
-            document.getElementById('kspp-nama-sekolah').textContent = settings.schoolName;
-            document.getElementById('kspp-alamat-sekolah').textContent = settings.schoolAddress;
-            document.getElementById('kspp-nokartu').textContent = `NO KARTU: SPP-${siswa.nisn}`;
             document.getElementById('kspp-siswa-nama').textContent = siswa.nama;
             document.getElementById('kspp-siswa-nisn').textContent = siswa.nisn;
             document.getElementById('kspp-siswa-kelas').textContent = siswa.kelas;
-            
-            const stdRate = settings.standardSPP || 250000;
-            document.getElementById('kspp-spp-rate').textContent = formatRupiah(stdRate);
-            document.getElementById('kspp-bendahara-nama').textContent = `( ${settings.treasurerName || 'Bendahara Sekolah'} )`;
-            document.getElementById('kspp-tgl-cetak').textContent = `Cirebon, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
-
-            const logo = document.getElementById('kspp-school-logo');
-            const defaultIcon = document.getElementById('kspp-default-icon');
-            if (settings.schoolLogo) {
-                if (logo) { logo.src = settings.schoolLogo; logo.classList.remove('hidden'); }
-                if (defaultIcon) defaultIcon.classList.add('hidden');
-            } else {
-                if (logo) logo.classList.add('hidden');
-                if (defaultIcon) defaultIcon.classList.remove('hidden');
-            }
+            document.getElementById('kspp-spp-rate').textContent = formatRupiah(settings.standardSPP || 250000);
+            document.getElementById('kspp-nokartu').textContent = `NO KARTU: SPP-${siswa.nisn}`;
 
             const tbody = document.getElementById('kspp-table-body');
             tbody.innerHTML = '';
-
-            const printMode = document.getElementById('kspp-print-mode')?.value || 'ALL';
 
             const bulanList = [
                 { code: 'Jul', name: 'Juli 2026' },
@@ -3352,102 +3427,55 @@
 
             let lunasCount = 0;
             let totalPaid = 0;
-            const totalTarget = stdRate * 12;
+            const targetTotal = (settings.standardSPP || 250000) * 12;
 
-            const startRowOffset = parseInt(document.getElementById('kspp-start-row')?.value || '1') - 1;
-
-            // Render empty rows if start row offset is set
-            for (let r = 0; r < startRowOffset; r++) {
-                const trEmpty = document.createElement('tr');
-                trEmpty.className = "bg-slate-50/50 border-b border-slate-200 text-slate-300 font-mono text-[11px]";
-                trEmpty.innerHTML = `
-                    <td class="p-2 border-r border-slate-300 text-center no-print">-</td>
-                    <td class="p-2 border-r border-slate-300 text-center font-bold text-slate-300">${r + 1}</td>
-                    <td class="p-2 border-r border-slate-300 text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-center text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-right text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-center text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-center text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-center text-slate-300">-</td>
-                    <td class="p-2 no-print"></td>
-                `;
-                tbody.appendChild(trEmpty);
+            for (let i = 1; i < startRow; i++) {
+                const tr = document.createElement('tr');
+                tr.className = "h-8 border-b border-slate-200";
+                tr.innerHTML = `<td class="p-2 no-print"></td><td class="p-2 text-center text-slate-300">${i}</td><td colspan="7" class="p-2 text-slate-300 italic text-[10px]">[Baris Kosong Cetakan Fisik]</td>`;
+                tbody.appendChild(tr);
             }
 
             bulanList.forEach((bln, idx) => {
+                const rowNum = startRow + idx;
                 const rec = sppRecords.find(r => r.siswaId === siswaId && r.bulan === bln.code && r.lunas);
-                const lineNum = startRowOffset + idx + 1;
-                const rowKey = `kspp-${siswaId}-${bln.code}`;
-                const isChecked = selectedKsppRows[rowKey] !== false;
+                const rowId = rec ? rec.id : `SPP-DUMMY-${bln.code}`;
+                const isChecked = selectedKsppRows[rowId] !== false;
 
-                if (rec) {
+                if (printMode === 'CHECKED_COMPACT' && !isChecked) return;
+
+                const isPaid = !!rec;
+                if (isPaid) {
                     lunasCount++;
-                    totalPaid += (rec.nominal || stdRate);
+                    totalPaid += rec.nominal;
                 }
-
-                if (printMode === 'CHECKED_COMPACT' && !isChecked) {
-                    return; // skip row rendering
-                }
-
-                const isBlankRow = printMode === 'CHECKED_PRESERVE' && !isChecked;
 
                 const tr = document.createElement('tr');
-                tr.className = "border-b border-slate-300 hover:bg-amber-50/50 font-mono text-[11px]";
+                tr.className = "hover:bg-emerald-100/40 border-b border-slate-300 text-[11px]";
 
-                if (isBlankRow) {
+                if (printMode === 'CHECKED_PRESERVE' && !isChecked) {
                     tr.innerHTML = `
-                        <td class="p-2 border-r border-slate-300 text-center no-print">
-                            <input type="checkbox" data-row-id="${rowKey}" onchange="onKsppRowCheckChange(this)" class="kspp-row-cb rounded text-emerald-600 cursor-pointer">
+                        <td class="p-2 text-center border-r border-slate-300 no-print">
+                            <input type="checkbox" data-row-id="${rowId}" onchange="onKsppRowCheckChange(this)" class="kspp-row-cb rounded text-amber-500 focus:ring-amber-400 cursor-pointer">
                         </td>
-                        <td class="p-2 border-r border-slate-300 text-center font-bold text-slate-300">${lineNum}</td>
-                        <td class="p-2 border-r border-slate-300 text-slate-200">-</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-slate-200">-</td>
-                        <td class="p-2 border-r border-slate-300 text-right text-slate-200">-</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-slate-200">-</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-slate-200">-</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-slate-200">-</td>
-                        <td class="p-2 text-center no-print"></td>
-                    `;
-                } else if (rec) {
-                    tr.innerHTML = `
-                        <td class="p-2 border-r border-slate-300 text-center no-print">
-                            <input type="checkbox" data-row-id="${rowKey}" ${isChecked ? 'checked' : ''} onchange="onKsppRowCheckChange(this)" class="kspp-row-cb rounded text-emerald-600 cursor-pointer">
-                        </td>
-                        <td class="p-2 border-r border-slate-300 text-center font-bold text-slate-600">${lineNum}</td>
-                        <td class="p-2 border-r border-slate-300 font-bold text-left text-slate-800">${bln.name}</td>
-                        <td class="p-2 border-r border-slate-300 text-center font-bold">
-                            <span class="px-1.5 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-800">201-SPP</span>
-                        </td>
-                        <td class="p-2 border-r border-slate-300 text-right font-black text-emerald-700">${formatRupiah(rec.nominal || stdRate)}</td>
-                        <td class="p-2 border-r border-slate-300 text-center font-semibold text-slate-700">${rec.tglBayar || '-'}</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-slate-600 text-[10px] font-sans">${rec.metode || 'Tunai'}</td>
-                        <td class="p-2 border-r border-slate-300 text-center font-sans">
-                            <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">LUNAS</span>
-                        </td>
-                        <td class="p-2 text-center no-print font-sans">
-                            <button onclick="openThermalSlip('SPP', '${rec.id}')" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px] shadow-sm">
-                                Struk
-                            </button>
-                        </td>
+                        <td class="p-2 text-center border-r border-slate-300">${rowNum}</td>
+                        <td colspan="6" class="p-2 border-r border-slate-300 text-slate-300 italic text-[10px]">[Sembunyi]</td>
+                        <td class="p-2 no-print"></td>
                     `;
                 } else {
                     tr.innerHTML = `
-                        <td class="p-2 border-r border-slate-300 text-center no-print">
-                            <input type="checkbox" data-row-id="${rowKey}" ${isChecked ? 'checked' : ''} onchange="onKsppRowCheckChange(this)" class="kspp-row-cb rounded text-emerald-600 cursor-pointer">
+                        <td class="p-2 text-center border-r border-slate-300 no-print">
+                            <input type="checkbox" data-row-id="${rowId}" ${isChecked ? 'checked' : ''} onchange="onKsppRowCheckChange(this)" class="kspp-row-cb rounded text-amber-500 focus:ring-amber-400 cursor-pointer">
                         </td>
-                        <td class="p-2 border-r border-slate-300 text-center font-bold text-slate-400">${lineNum}</td>
-                        <td class="p-2 border-r border-slate-300 font-bold text-left text-slate-700">${bln.name}</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
-                        <td class="p-2 border-r border-slate-300 text-right text-slate-400">${formatRupiah(stdRate)}</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-slate-400">-</td>
-                        <td class="p-2 border-r border-slate-300 text-center font-sans">
-                            <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-bold text-[10px]">BELUM</span>
-                        </td>
-                        <td class="p-2 text-center no-print font-sans">
-                            <button onclick="openPaySPPModal('${siswa.id}', '${bln.code}')" class="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded font-bold text-[10px]">
-                                Bayar
-                            </button>
+                        <td class="p-2 text-center border-r border-slate-300 font-bold">${rowNum}</td>
+                        <td class="p-2 border-r border-slate-300 font-bold text-slate-900">${bln.name}</td>
+                        <td class="p-2 text-center border-r border-slate-300 font-mono text-[10px]">100-SPP</td>
+                        <td class="p-2 text-right border-r border-slate-300 font-mono font-bold ${isPaid ? 'text-emerald-700' : 'text-slate-400'}">${formatRupiah(isPaid ? rec.nominal : settings.standardSPP || 250000)}</td>
+                        <td class="p-2 text-center border-r border-slate-300 font-mono">${isPaid ? rec.tglBayar : '-'}</td>
+                        <td class="p-2 text-center border-r border-slate-300 text-[10px]">${isPaid ? rec.metode : '-'}</td>
+                        <td class="p-2 text-center border-r border-slate-300 font-bold">${isPaid ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">LUNAS</span>' : '<span class="px-2 py-0.5 bg-slate-100 text-slate-500 rounded">BELUM</span>'}</td>
+                        <td class="p-2 text-center no-print">
+                            ${isPaid ? `<button onclick="openThermalSlip('SPP', '${rec.id}')" class="px-2 py-0.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded font-bold text-[10px]">Struk</button>` : `<button onclick="openPaySPPModal('${siswa.id}', '${bln.code}')" class="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[10px]">Bayar</button>`}
                         </td>
                     `;
                 }
@@ -3455,65 +3483,45 @@
             });
 
             document.getElementById('kspp-progress-text').textContent = `${lunasCount} / 12 Bulan Lunas`;
-            document.getElementById('kspp-total-target').textContent = formatRupiah(totalTarget);
+            document.getElementById('kspp-total-target').textContent = formatRupiah(targetTotal);
             document.getElementById('kspp-total-paid').textContent = formatRupiah(totalPaid);
-            document.getElementById('kspp-total-unpaid').textContent = formatRupiah(Math.max(0, totalTarget - totalPaid));
+            document.getElementById('kspp-total-unpaid').textContent = formatRupiah(targetTotal - totalPaid);
         }
 
         function downloadKartuSPPPDF() {
             const element = document.getElementById('printable-kartu-spp');
             if (!element) return;
-            const selectEl = document.getElementById('kspp-select-siswa');
-            const siswaId = selectEl?.value;
-            const siswa = siswaList.find(s => s.id === siswaId);
-            const namaFile = siswa ? siswa.nama.replace(/\s+/g, '_') : 'Passbook_SPP';
-
             const opt = {
-                margin:       [5, 5, 5, 5],
-                filename:     `Passbook_SPP_${namaFile}_2026_2027.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                margin: 0.3,
+                filename: `Kartu_SPP_${Date.now()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
             html2pdf().set(opt).from(element).save();
-            showNotification("Mengunduh Passbook SPP PDF...", "success");
         }
 
         function openPassbookTagihanModal(siswaId = null) {
-            populateSiswaSelects();
-            const selectEl = document.getElementById('ptagbook-select-siswa');
-            if (siswaId && selectEl) {
-                selectEl.value = siswaId;
+            const select = document.getElementById('ptagbook-select-siswa');
+            if (select && siswaId) {
+                select.value = siswaId;
             }
             renderPassbookTagihanContent();
             openModal('modal-passbook-tagihan');
         }
 
         function renderPassbookTagihanContent() {
-            const selectEl = document.getElementById('ptagbook-select-siswa');
-            if (!selectEl) return;
-            const siswaId = selectEl.value;
+            const siswaId = document.getElementById('ptagbook-select-siswa').value;
+            const startRow = parseInt(document.getElementById('ptagbook-start-row').value) || 1;
+            const printMode = document.getElementById('ptagbook-print-mode')?.value || 'ALL';
+
             const siswa = siswaList.find(s => s.id === siswaId);
             if (!siswa) return;
 
-            document.getElementById('ptagbook-nama-sekolah').textContent = settings.schoolName;
-            document.getElementById('ptagbook-alamat-sekolah').textContent = settings.schoolAddress;
-            document.getElementById('ptagbook-nokartu').textContent = `NO KARTU: TAG-${siswa.nisn}`;
             document.getElementById('ptagbook-siswa-nama').textContent = siswa.nama;
             document.getElementById('ptagbook-siswa-nisn').textContent = siswa.nisn;
             document.getElementById('ptagbook-siswa-kelas').textContent = siswa.kelas;
-            document.getElementById('ptagbook-bendahara-nama').textContent = `( ${settings.treasurerName || 'Bendahara Sekolah'} )`;
-            document.getElementById('ptagbook-tgl-cetak').textContent = `Cirebon, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
-
-            const logo = document.getElementById('ptagbook-school-logo');
-            const defaultIcon = document.getElementById('ptagbook-default-icon');
-            if (settings.schoolLogo) {
-                if (logo) { logo.src = settings.schoolLogo; logo.classList.remove('hidden'); }
-                if (defaultIcon) defaultIcon.classList.add('hidden');
-            } else {
-                if (logo) logo.classList.add('hidden');
-                if (defaultIcon) defaultIcon.classList.remove('hidden');
-            }
+            document.getElementById('ptagbook-nokartu').textContent = `NO KARTU: TAG-${siswa.nisn}`;
 
             const tbody = document.getElementById('ptagbook-table-body');
             tbody.innerHTML = '';
@@ -3521,659 +3529,430 @@
             const list = tagihanList.filter(t => t.siswaId === siswaId);
             document.getElementById('ptagbook-pos-count').textContent = `${list.length} Tagihan`;
 
-            let totalNominalSum = 0;
-            let totalPaidSum = 0;
+            let totalNominal = 0;
+            let totalPaid = 0;
             let lunasCount = 0;
 
-            const startRowOffset = parseInt(document.getElementById('ptagbook-start-row')?.value || '1') - 1;
-
-            // Empty rows offset
-            for (let r = 0; r < startRowOffset; r++) {
-                const trEmpty = document.createElement('tr');
-                trEmpty.className = "bg-slate-50/50 border-b border-slate-200 text-slate-300 font-mono text-[11px]";
-                trEmpty.innerHTML = `
-                    <td class="p-2 border-r border-slate-300 text-center font-bold text-slate-300">${r + 1}</td>
-                    <td class="p-2 border-r border-slate-300 text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-center text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-right text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-right text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-right text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-center text-slate-300">-</td>
-                    <td class="p-2 no-print"></td>
-                `;
-                tbody.appendChild(trEmpty);
-            }
-
-            if (list.length === 0 && startRowOffset === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400 font-sans">Siswa ini belum memiliki kewajiban Tagihan Non-SPP</td></tr>`;
-                document.getElementById('ptagbook-progress-text').textContent = `0 / 0 Lunas`;
-                document.getElementById('ptagbook-total-nominal').textContent = formatRupiah(0);
-                document.getElementById('ptagbook-total-paid').textContent = formatRupiah(0);
-                document.getElementById('ptagbook-total-unpaid').textContent = formatRupiah(0);
-                return;
+            for (let i = 1; i < startRow; i++) {
+                const tr = document.createElement('tr');
+                tr.className = "h-8 border-b border-slate-200";
+                tr.innerHTML = `<td class="p-2 no-print"></td><td class="p-2 text-center text-slate-300">${i}</td><td colspan="7" class="p-2 text-slate-300 italic text-[10px]">[Baris Kosong Cetakan Fisik]</td>`;
+                tbody.appendChild(tr);
             }
 
             list.forEach((t, idx) => {
-                const lineNum = startRowOffset + idx + 1;
-                const sisa = Math.max(0, t.nominalTagihan - t.dibayar);
-                totalNominalSum += t.nominalTagihan;
-                totalPaidSum += t.dibayar;
+                const rowNum = startRow + idx;
+                const sisa = t.nominalTagihan - t.dibayar;
+                totalNominal += t.nominalTagihan;
+                totalPaid += t.dibayar;
+                if (sisa <= 0) lunasCount++;
 
-                const isLunas = t.status === 'LUNAS' || sisa <= 0;
-                if (isLunas) lunasCount++;
+                const rowId = t.id;
+                const isChecked = selectedPtagbookRows[rowId] !== false;
+
+                if (printMode === 'CHECKED_COMPACT' && !isChecked) return;
 
                 const tr = document.createElement('tr');
-                tr.className = "border-b border-slate-300 hover:bg-amber-50/50 font-mono text-[11px]";
-                tr.innerHTML = `
-                    <td class="p-2 border-r border-slate-300 text-center font-bold text-slate-600">${lineNum}</td>
-                    <td class="p-2 border-r border-slate-300 text-left font-bold text-slate-900">
-                        <div>${t.jenisTagihan}</div>
-                        <div class="text-[9px] text-slate-400 font-mono">ID: ${t.id}</div>
-                    </td>
-                    <td class="p-2 border-r border-slate-300 text-center font-bold">
-                        <span class="px-1.5 py-0.5 rounded text-[10px] bg-amber-100 text-amber-900">301-TAG</span>
-                    </td>
-                    <td class="p-2 border-r border-slate-300 text-right font-bold text-slate-900">${formatRupiah(t.nominalTagihan)}</td>
-                    <td class="p-2 border-r border-slate-300 text-right font-bold text-emerald-700">${formatRupiah(t.dibayar)}</td>
-                    <td class="p-2 border-r border-slate-300 text-right font-bold text-rose-700">${formatRupiah(sisa)}</td>
-                    <td class="p-2 border-r border-slate-300 text-center font-sans">
-                        <span class="px-2 py-0.5 rounded-full font-bold text-[10px] ${isLunas ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                            ${isLunas ? 'LUNAS' : 'CICIL'}
-                        </span>
-                    </td>
-                    <td class="p-2 text-center no-print font-sans">
-                        <div class="flex items-center justify-center space-x-1">
-                            ${!isLunas ? `<button onclick="openPayTagihanModal('${t.id}')" class="px-2 py-0.5 bg-amber-500 hover:bg-amber-600 text-white rounded font-bold text-[10px]">Bayar</button>` : ''}
-                            <button onclick="openThermalSlip('TAGIHAN', '${t.id}')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-900 text-white rounded font-bold text-[10px]">Struk</button>
-                        </div>
-                    </td>
-                `;
+                tr.className = "hover:bg-amber-100/40 border-b border-slate-300 text-[11px]";
+
+                if (printMode === 'CHECKED_PRESERVE' && !isChecked) {
+                    tr.innerHTML = `
+                        <td class="p-2 text-center border-r border-slate-300 no-print">
+                            <input type="checkbox" data-row-id="${rowId}" onchange="onPtagbookRowCheckChange(this)" class="ptagbook-row-cb rounded text-amber-500 focus:ring-amber-400 cursor-pointer">
+                        </td>
+                        <td class="p-2 text-center border-r border-slate-300">${rowNum}</td>
+                        <td colspan="6" class="p-2 border-r border-slate-300 text-slate-300 italic text-[10px]">[Sembunyi]</td>
+                        <td class="p-2 no-print"></td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td class="p-2 text-center border-r border-slate-300 no-print">
+                            <input type="checkbox" data-row-id="${rowId}" ${isChecked ? 'checked' : ''} onchange="onPtagbookRowCheckChange(this)" class="ptagbook-row-cb rounded text-amber-500 focus:ring-amber-400 cursor-pointer">
+                        </td>
+                        <td class="p-2 text-center border-r border-slate-300 font-bold">${rowNum}</td>
+                        <td class="p-2 border-r border-slate-300">
+                            <div class="font-bold text-slate-900">${t.jenisTagihan}</div>
+                            <div class="text-[9px] text-slate-500 font-mono">${t.id}</div>
+                        </td>
+                        <td class="p-2 text-center border-r border-slate-300 font-mono text-[10px]">200-TAG</td>
+                        <td class="p-2 text-right border-r border-slate-300 font-mono font-bold text-slate-800">${formatRupiah(t.nominalTagihan)}</td>
+                        <td class="p-2 text-right border-r border-slate-300 font-mono font-bold text-emerald-700">${formatRupiah(t.dibayar)}</td>
+                        <td class="p-2 text-right border-r border-slate-300 font-mono font-bold text-rose-700">${formatRupiah(sisa)}</td>
+                        <td class="p-2 text-center border-r border-slate-300 font-bold">${sisa <= 0 ? '<span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded">LUNAS</span>' : '<span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-bold">CICIL</span>'}</td>
+                        <td class="p-2 text-center no-print space-x-1">
+                            ${sisa > 0 ? `<button onclick="openPayTagihanModal('${t.id}')" class="px-2 py-0.5 bg-amber-600 hover:bg-amber-700 text-white rounded font-bold text-[10px]">Bayar</button>` : ''}
+                            <button onclick="openThermalSlip('TAGIHAN', '${t.id}')" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-900 text-white rounded font-bold text-[10px]">Kwitansi</button>
+                        </td>
+                    `;
+                }
                 tbody.appendChild(tr);
             });
 
             document.getElementById('ptagbook-progress-text').textContent = `${lunasCount} / ${list.length} Lunas`;
-            document.getElementById('ptagbook-total-nominal').textContent = formatRupiah(totalNominalSum);
-            document.getElementById('ptagbook-total-paid').textContent = formatRupiah(totalPaidSum);
-            document.getElementById('ptagbook-total-unpaid').textContent = formatRupiah(Math.max(0, totalNominalSum - totalPaidSum));
+            document.getElementById('ptagbook-total-nominal').textContent = formatRupiah(totalNominal);
+            document.getElementById('ptagbook-total-paid').textContent = formatRupiah(totalPaid);
+            document.getElementById('ptagbook-total-unpaid').textContent = formatRupiah(totalNominal - totalPaid);
         }
 
         function downloadPassbookTagihanPDF() {
             const element = document.getElementById('printable-passbook-tagihan');
             if (!element) return;
-            const selectEl = document.getElementById('ptagbook-select-siswa');
-            const siswaId = selectEl?.value;
-            const siswa = siswaList.find(s => s.id === siswaId);
-            const namaFile = siswa ? siswa.nama.replace(/\s+/g, '_') : 'Passbook_Tagihan';
-
             const opt = {
-                margin:       [5, 5, 5, 5],
-                filename:     `Passbook_Tagihan_${namaFile}_${siswa?.nisn || 'NonSPP'}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+                margin: 0.3,
+                filename: `Passbook_Tagihan_${Date.now()}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
             html2pdf().set(opt).from(element).save();
-            showNotification("Mengunduh Passbook Tagihan PDF...", "success");
         }
 
-        function openBukuTabunganModal(siswaId = null) {
-            populateSiswaSelects();
-            const selectEl = document.getElementById('btab-select-siswa');
-            if (siswaId && selectEl) {
-                selectEl.value = siswaId;
+        function openSiswaModal(siswaId = null) {
+            const titleEl = document.getElementById('modal-siswa-title');
+            if (siswaId) {
+                const s = siswaList.find(item => item.id === siswaId);
+                if (!s) return;
+                document.getElementById('siswa-id').value = s.id;
+                document.getElementById('siswa-nisn').value = s.nisn;
+                document.getElementById('siswa-nama').value = s.nama;
+                document.getElementById('siswa-kelas').value = s.kelas;
+                document.getElementById('siswa-wa').value = s.wa || '';
+                if (titleEl) titleEl.textContent = 'Edit Data Siswa';
+            } else {
+                document.getElementById('form-siswa').reset();
+                document.getElementById('siswa-id').value = '';
+                if (titleEl) titleEl.textContent = 'Pendaftaran Siswa Baru';
             }
-            onSelectBukuTabunganSiswa();
-            openModal('modal-buku-tabungan');
+            openModal('modal-siswa');
         }
 
-        function downloadPassbookPDF() {
-            const element = document.getElementById('printable-buku-tabungan');
-            if (!element) return;
-            const selectEl = document.getElementById('btab-select-siswa');
-            const siswaId = selectEl?.value;
-            const siswa = siswaList.find(s => s.id === siswaId);
-            const namaFile = siswa ? siswa.nama.replace(/\s+/g, '_') : 'Passbook';
+        function submitSiswa(e) {
+            e.preventDefault();
+            const id = document.getElementById('siswa-id').value;
+            const nisn = document.getElementById('siswa-nisn').value.trim();
+            const nama = document.getElementById('siswa-nama').value.trim();
+            const kelas = document.getElementById('siswa-kelas').value.trim();
+            const wa = document.getElementById('siswa-wa').value.trim();
 
-            const opt = {
-                margin:       [5, 5, 5, 5],
-                filename:     `Buku_Tabungan_${namaFile}_${siswa?.nisn || 'SimPel'}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
-            };
-            html2pdf().set(opt).from(element).save();
-            showNotification("Mengunduh Passbook Tabungan PDF...", "success");
+            if (id) {
+                const idx = siswaList.findIndex(s => s.id === id);
+                if (idx !== -1) {
+                    siswaList[idx] = { ...siswaList[idx], nisn, nama, kelas, wa };
+                }
+                showNotification(`Data siswa ${nama} berhasil diperbarui!`, "success");
+            } else {
+                const newSiswa = {
+                    id: 'SIS-' + String(Date.now()).slice(-4),
+                    nisn, nama, kelas, wa,
+                    saldoTabungan: 0
+                };
+                siswaList.push(newSiswa);
+                showNotification(`Siswa baru ${nama} berhasil ditambahkan!`, "success");
+            }
+
+            saveState();
+            renderAll();
+            closeModal('modal-siswa');
         }
 
-        function onSelectBukuTabunganSiswa() {
-            const siswaId = document.getElementById('btab-select-siswa').value;
+        function deleteSiswa(siswaId) {
+            const s = siswaList.find(item => item.id === siswaId);
+            if (!s) return;
+
+            showConfirmModal(
+                "Hapus Data Siswa",
+                `Apakah Anda yakin ingin menghapus siswa "${s.nama}" (${s.nisn})? Seluruh data riwayat pembayaran terkait juga akan dibersihkan.`,
+                function() {
+                    siswaList = siswaList.filter(item => item.id !== siswaId);
+                    sppRecords = sppRecords.filter(item => item.siswaId !== siswaId);
+                    tagihanList = tagihanList.filter(item => item.siswaId !== siswaId);
+                    tabunganTrx = tabunganTrx.filter(item => item.siswaId !== siswaId);
+
+                    saveState();
+                    renderAll();
+                    showNotification(`Data siswa ${s.nama} telah dihapus.`, "info");
+                }
+            );
+        }
+
+        function openPaySPPModal(siswaId, bulanCode) {
             const siswa = siswaList.find(s => s.id === siswaId);
             if (!siswa) return;
 
-            document.getElementById('btab-nama-sekolah').textContent = settings.schoolName;
-            document.getElementById('btab-alamat-sekolah').textContent = settings.schoolAddress;
-            document.getElementById('btab-norek').textContent = `NO REK: REK-${siswa.nisn}`;
-            document.getElementById('btab-siswa-nama').textContent = siswa.nama;
-            document.getElementById('btab-siswa-nisn').textContent = siswa.nisn;
-            document.getElementById('btab-siswa-kelas').textContent = siswa.kelas;
-            document.getElementById('btab-tgl-cetak').textContent = `Cirebon, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
-            document.getElementById('btab-bendahara-nama').textContent = `( ${settings.treasurerName || 'Bendahara Sekolah'} )`;
+            document.getElementById('spp-siswa-id').value = siswa.id;
+            document.getElementById('spp-bulan-code').value = bulanCode;
+            document.getElementById('spp-target-nama').textContent = `${siswa.nama} (${siswa.kelas})`;
+            document.getElementById('spp-target-bulan').textContent = `${bulanCode} (TA 2026/2027)`;
+            document.getElementById('spp-nominal').value = settings.standardSPP || 250000;
+            document.getElementById('spp-keterangan').value = `Pembayaran SPP Bulan ${bulanCode} - ${siswa.nama}`;
 
-            const logo = document.getElementById('btab-school-logo');
-            const icon = document.getElementById('btab-default-icon');
-            if (settings.schoolLogo) {
-                if (logo) { logo.src = settings.schoolLogo; logo.classList.remove('hidden'); }
-                if (icon) icon.classList.add('hidden');
-            } else {
-                if (logo) logo.classList.add('hidden');
-                if (icon) icon.classList.remove('hidden');
-            }
-
-            const tbody = document.getElementById('btab-table-body');
-            tbody.innerHTML = '';
-
-            const list = tabunganTrx.filter(t => t.siswaId === siswaId);
-            let runningSaldo = 0;
-            let totalKreditSum = 0;
-            let totalDebetSum = 0;
-
-            const printMode = document.getElementById('btab-print-mode')?.value || 'ALL';
-            const startRowOffset = parseInt(document.getElementById('btab-start-row')?.value || '1') - 1;
-
-            // Render baris kosong jika mulainya bukan dari baris 1 (untuk cetak passbook fisik)
-            for (let r = 0; r < startRowOffset; r++) {
-                const trEmpty = document.createElement('tr');
-                trEmpty.className = "bg-slate-50/50 border-b border-slate-200 text-slate-300";
-                trEmpty.innerHTML = `
-                    <td class="p-2 border-r border-slate-300 text-center no-print">-</td>
-                    <td class="p-2 border-r border-slate-300 text-center font-bold text-slate-300">${r + 1}</td>
-                    <td class="p-2 border-r border-slate-300 text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-center text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-right text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-right text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-right text-slate-300">-</td>
-                    <td class="p-2 border-r border-slate-300 text-center text-slate-300">-</td>
-                    <td class="p-2 no-print"></td>
-                `;
-                tbody.appendChild(trEmpty);
-            }
-
-            if (list.length === 0 && startRowOffset === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-400 font-sans">Belum ada mutasi tabungan terdaftar pada rekening ini</td></tr>`;
-                document.getElementById('btab-total-kredit').textContent = formatRupiah(0);
-                document.getElementById('btab-total-debet').textContent = formatRupiah(0);
-                document.getElementById('btab-saldo-akhir').textContent = formatRupiah(0);
-                return;
-            }
-
-            list.forEach((t, i) => {
-                const isSetor = t.tipe === 'SETOR';
-                if (isSetor) {
-                    runningSaldo += t.nominal;
-                    totalKreditSum += t.nominal;
-                } else {
-                    runningSaldo -= t.nominal;
-                    totalDebetSum += t.nominal;
-                }
-
-                const lineNum = startRowOffset + i + 1;
-                const rowKey = `btab-${t.id}`;
-                const isChecked = selectedBtabRows[rowKey] !== false;
-
-                if (printMode === 'CHECKED_COMPACT' && !isChecked) {
-                    return; // skip rendering
-                }
-
-                const isBlankRow = printMode === 'CHECKED_PRESERVE' && !isChecked;
-
-                const tr = document.createElement('tr');
-                tr.className = "border-b border-slate-300 hover:bg-amber-50/50 font-mono text-[11px]";
-
-                if (isBlankRow) {
-                    tr.innerHTML = `
-                        <td class="p-2 border-r border-slate-300 text-center no-print">
-                            <input type="checkbox" data-row-id="${rowKey}" onchange="onBtabRowCheckChange(this)" class="btab-row-cb rounded text-amber-500 cursor-pointer">
-                        </td>
-                        <td class="p-2 border-r border-slate-300 text-center font-bold text-slate-300">${lineNum}</td>
-                        <td class="p-2 border-r border-slate-300 text-slate-200">-</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-slate-200">-</td>
-                        <td class="p-2 border-r border-slate-300 text-right text-slate-200">-</td>
-                        <td class="p-2 border-r border-slate-300 text-right text-slate-200">-</td>
-                        <td class="p-2 border-r border-slate-300 text-right text-slate-200">-</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-slate-200">-</td>
-                        <td class="p-2 no-print"></td>
-                    `;
-                } else {
-                    tr.innerHTML = `
-                        <td class="p-2 border-r border-slate-300 text-center no-print">
-                            <input type="checkbox" data-row-id="${rowKey}" ${isChecked ? 'checked' : ''} onchange="onBtabRowCheckChange(this)" class="btab-row-cb rounded text-amber-500 cursor-pointer">
-                        </td>
-                        <td class="p-2 border-r border-slate-300 text-center font-bold text-slate-600">${lineNum}</td>
-                        <td class="p-2 border-r border-slate-300 font-semibold">${t.tanggal}</td>
-                        <td class="p-2 border-r border-slate-300 text-center font-bold">
-                            <span class="px-1.5 py-0.5 rounded text-[10px] ${isSetor ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
-                                ${t.sandi || (isSetor ? '101-STR' : '102-DBT')}
-                            </span>
-                        </td>
-                        <td class="p-2 border-r border-slate-300 text-right text-rose-700 font-bold">${!isSetor ? formatRupiah(t.nominal) : '-'}</td>
-                        <td class="p-2 border-r border-slate-300 text-right text-emerald-700 font-bold">${isSetor ? formatRupiah(t.nominal) : '-'}</td>
-                        <td class="p-2 border-r border-slate-300 text-right font-black text-slate-900 bg-slate-50/50">${formatRupiah(runningSaldo)}</td>
-                        <td class="p-2 border-r border-slate-300 text-center text-[10px] text-slate-500 font-sans">TLR-01</td>
-                        <td class="p-2 text-center no-print font-sans">
-                            <div class="flex items-center justify-center space-x-1">
-                                <button onclick="openThermalSlip('TABUNGAN', '${t.id}')" class="px-2 py-0.5 bg-sky-100 hover:bg-sky-200 text-sky-800 rounded font-bold text-[10px]" title="Lihat Struk">
-                                    Struk
-                                </button>
-                                <button onclick="deleteTabunganTrx('${t.id}')" class="px-2 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded font-bold text-[10px]" title="Hapus Mutasi Tabungan">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </div>
-                        </td>
-                    `;
-                }
-                tbody.appendChild(tr);
-            });
-
-            document.getElementById('btab-total-kredit').textContent = formatRupiah(totalKreditSum);
-            document.getElementById('btab-total-debet').textContent = formatRupiah(totalDebetSum);
-            document.getElementById('btab-saldo-akhir').textContent = formatRupiah(runningSaldo);
+            openModal('modal-pay-spp');
         }
 
-        function deleteTabunganTrx(tabId) {
-            const tab = tabunganTrx.find(t => t.id === tabId);
-            if (!tab) return;
-            const siswa = siswaList.find(s => s.id === tab.siswaId);
+        function submitPaySPP(e) {
+            e.preventDefault();
+            const siswaId = document.getElementById('spp-siswa-id').value;
+            const bulan = document.getElementById('spp-bulan-code').value;
+            const nominal = Number(document.getElementById('spp-nominal').value);
+            const metode = document.getElementById('spp-metode').value;
+            const ket = document.getElementById('spp-keterangan').value;
 
-            showConfirmModal(
-                "Hapus Mutasi Tabungan",
-                `Apakah Anda yakin ingin menghapus mutasi tabungan ID ${tab.id}? Saldo tabungan siswa akan disesuaikan kembali.`,
-                function() {
-                    if (siswa) {
-                        if (tab.tipe === 'SETOR') {
-                            siswa.saldoTabungan = Math.max(0, (siswa.saldoTabungan || 0) - tab.nominal);
-                        } else if (tab.tipe === 'TARIK') {
-                            siswa.saldoTabungan = (siswa.saldoTabungan || 0) + tab.nominal;
-                        }
-                    }
-                    tabunganTrx = tabunganTrx.filter(t => t.id !== tabId);
-                    saveState();
-                    renderAll();
-                    onSelectBukuTabunganSiswa();
-                    showNotification("Mutasi tabungan berhasil dihapus dan saldo disesuaikan.", "info");
+            const siswa = siswaList.find(s => s.id === siswaId);
+            if (!siswa) return;
+
+            if (metode === 'Autodebet Tabungan') {
+                if ((siswa.saldoTabungan || 0) < nominal) {
+                    showNotification(`Saldo tabungan ${siswa.nama} tidak mencukupi untuk autodebet SPP!`, "error");
+                    return;
                 }
-            );
-        }
-
-        function openBukuGajiModal() {
-            const selectGuru = document.getElementById('bgaji-filter-guru');
-            if (selectGuru) {
-                selectGuru.innerHTML = '<option value="">-- Semua Pegawai --</option>';
-                guruList.forEach(g => {
-                    const opt = document.createElement('option');
-                    opt.value = g.id;
-                    opt.textContent = `${g.nama} (${g.nip})`;
-                    selectGuru.appendChild(opt);
+                siswa.saldoTabungan -= nominal;
+                tabunganTrx.push({
+                    id: 'TAB-' + String(Date.now()).slice(-4),
+                    siswaId: siswa.id,
+                    tipe: 'TARIK',
+                    sandi: settings.sandiAutodebet || '102-DBT',
+                    nominal: nominal,
+                    tanggal: new Date().toISOString().split('T')[0],
+                    keterangan: `Autodebet SPP Bulan ${bulan}`
                 });
             }
-            renderBukuGajiTable();
-            openModal('modal-buku-gaji');
-        }
 
-        function renderBukuGajiTable() {
-            const filterGuru = document.getElementById('bgaji-filter-guru')?.value || '';
-            const filterBulan = document.getElementById('bgaji-filter-bulan')?.value || '';
+            const sppId = 'SPP-' + String(Date.now()).slice(-4);
+            const recIndex = sppRecords.findIndex(r => r.siswaId === siswaId && r.bulan === bulan);
 
-            document.getElementById('bgaji-sekolah-nama').textContent = settings.schoolName;
-            document.getElementById('bgaji-sekolah-alamat').textContent = settings.schoolAddress;
-            document.getElementById('bgaji-kepsek-nama').textContent = `( ${settings.principalName || 'Kepala Sekolah'} )`;
-            document.getElementById('bgaji-bendahara-nama').textContent = `( ${settings.treasurerName || 'Bendahara Sekolah'} )`;
-            document.getElementById('bgaji-tgl-cetak').textContent = `Cirebon, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+            const recordObj = {
+                id: sppId,
+                siswaId: siswaId,
+                bulan: bulan,
+                tahun: '2026/2027',
+                lunas: true,
+                tglBayar: new Date().toISOString().split('T')[0],
+                nominal: nominal,
+                metode: metode
+            };
 
-            const logo = document.getElementById('bgaji-school-logo');
-            if (settings.schoolLogo) {
-                logo.src = settings.schoolLogo;
-                logo.classList.remove('hidden');
+            if (recIndex !== -1) {
+                sppRecords[recIndex] = recordObj;
             } else {
-                logo.classList.add('hidden');
+                sppRecords.push(recordObj);
             }
 
-            const tbody = document.getElementById('bgaji-table-body');
-            tbody.innerHTML = '';
-
-            let filtered = payrollHistory.filter(p => {
-                const matchG = filterGuru === '' || p.guruId === filterGuru;
-                const matchB = filterBulan === '' || p.periode === filterBulan;
-                return matchG && matchB;
+            transactions.push({
+                id: 'TRX-' + String(Date.now()).slice(-4),
+                refId: sppId,
+                tgl: new Date().toISOString().split('T')[0],
+                tanggal: new Date().toISOString().split('T')[0],
+                jenis: 'MASUK',
+                kategori: 'SPP Bulanan Siswa',
+                nominal: nominal,
+                metode: metode,
+                siswaId: siswaId,
+                keterangan: ket || `Pembayaran SPP ${bulan} - ${siswa.nama}`
             });
 
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">Belum ada riwayat penggajian terdaftar</td></tr>`;
-                document.getElementById('bgaji-total-thp').textContent = formatRupiah(0);
-                return;
-            }
-
-            let totalThpSum = 0;
-            filtered.forEach((p, idx) => {
-                const guru = guruList.find(g => g.id === p.guruId) || { nama: 'Pegawai', nip: '-' };
-                totalThpSum += (p.thp || 0);
-
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-50 border-b border-slate-200";
-                tr.innerHTML = `
-                    <td class="p-2 text-center border border-slate-300 text-slate-400">${idx + 1}</td>
-                    <td class="p-2 border border-slate-300">
-                        <div class="font-bold text-slate-900">${p.id}</div>
-                        <div class="text-[10px] text-slate-500">${p.tanggal} (${p.periode})</div>
-                    </td>
-                    <td class="p-2 border border-slate-300">
-                        <div class="font-bold text-slate-900">${guru.nama}</div>
-                        <div class="text-[10px] text-slate-500 font-mono">NIP: ${guru.nip}</div>
-                    </td>
-                    <td class="p-2 border border-slate-300 text-right font-semibold">${formatRupiah((p.gapok || 0) + (p.tunjangan || 0))}</td>
-                    <td class="p-2 border border-slate-300 text-right font-semibold text-emerald-700">${formatRupiah((p.honorJamTotal || 0) + (p.honorHadirTotal || 0) + (p.honorKegiatan || 0))}</td>
-                    <td class="p-2 border border-slate-300 text-right font-bold text-rose-600">${formatRupiah(p.potongan || 0)}</td>
-                    <td class="p-2 border border-slate-300 text-right font-black text-purple-900">${formatRupiah(p.thp || 0)}</td>
-                    <td class="p-2 border border-slate-300 text-center no-print">
-                        <div class="flex items-center justify-center space-x-1">
-                            <button onclick="openThermalSlip('PAYROLL', '${p.id}')" class="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded font-bold text-[10px]">
-                                <i class="fa-solid fa-receipt mr-1"></i> Slip
-                            </button>
-                            <button onclick="deletePayrollRecord('${p.id}')" class="px-2 py-1 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded font-bold text-[10px]" title="Hapus Riwayat Gaji">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            document.getElementById('bgaji-total-thp').textContent = formatRupiah(totalThpSum);
+            saveState();
+            renderAll();
+            closeModal('modal-pay-spp');
+            showNotification(`Pembayaran SPP bulan ${bulan} untuk ${siswa.nama} berhasil!`, "success");
+            openThermalSlip('SPP', sppId);
         }
 
-        function deletePayrollRecord(payId) {
-            const pay = payrollHistory.find(p => p.id === payId);
-            if (!pay) return;
-            const guru = guruList.find(g => g.id === pay.guruId) || { nama: 'Pegawai' };
+        function openTagihanModal(tagId = null) {
+            const titleEl = document.getElementById('modal-tagihan-title');
+            if (tagId) {
+                const t = tagihanList.find(item => item.id === tagId);
+                if (!t) return;
+                document.getElementById('ntag-id').value = t.id;
+                document.getElementById('ntag-siswa-id').value = t.siswaId;
+                document.getElementById('ntag-jenis').value = t.jenisTagihan;
+                document.getElementById('ntag-nominal').value = t.nominalTagihan;
+                if (titleEl) titleEl.textContent = 'Edit Tagihan Non-SPP';
+            } else {
+                document.getElementById('form-tagihan-baru').reset();
+                document.getElementById('ntag-id').value = '';
+                if (titleEl) titleEl.textContent = 'Buat Tagihan Non-SPP Baru';
+            }
+            openModal('modal-tagihan-baru');
+        }
+
+        function submitTagihanBaru(e) {
+            e.preventDefault();
+            const id = document.getElementById('ntag-id').value;
+            const siswaId = document.getElementById('ntag-siswa-id').value;
+            const jenisTagihan = document.getElementById('ntag-jenis').value.trim();
+            const nominalTagihan = Number(document.getElementById('ntag-nominal').value);
+
+            const siswa = siswaList.find(s => s.id === siswaId);
+            if (!siswa) return;
+
+            if (id) {
+                const idx = tagihanList.findIndex(t => t.id === id);
+                if (idx !== -1) {
+                    const existing = tagihanList[idx];
+                    const newStatus = existing.dibayar >= nominalTagihan ? 'LUNAS' : existing.dibayar > 0 ? 'CICIL' : 'UNPAID';
+                    tagihanList[idx] = { ...existing, siswaId, jenisTagihan, nominalTagihan, status: newStatus };
+                }
+                showNotification(`Tagihan ${jenisTagihan} diperbarui!`, "success");
+            } else {
+                const newTagihan = {
+                    id: 'TAG-' + String(Date.now()).slice(-4),
+                    siswaId,
+                    jenisTagihan,
+                    nominalTagihan,
+                    dibayar: 0,
+                    status: 'UNPAID',
+                    metode: 'Tunai'
+                };
+                tagihanList.push(newTagihan);
+                showNotification(`Tagihan ${jenisTagihan} untuk ${siswa.nama} berhasil ditambahkan!`, "success");
+            }
+
+            saveState();
+            renderAll();
+            closeModal('modal-tagihan-baru');
+        }
+
+        function deleteTagihan(tagId) {
+            const t = tagihanList.find(item => item.id === tagId);
+            if (!t) return;
 
             showConfirmModal(
-                "Hapus Riwayat Gaji",
-                `Apakah Anda yakin ingin menghapus catatan riwayat gaji ID ${pay.id} (${guru.nama} - ${pay.periode})? Transaksi pengeluaran kas terkait juga akan dihapus.`,
+                "Hapus Tagihan",
+                `Apakah Anda yakin ingin menghapus tagihan "${t.jenisTagihan}" (${t.id})?`,
                 function() {
-                    payrollHistory = payrollHistory.filter(p => p.id !== payId);
-                    transactions = transactions.filter(t => t.refId !== payId);
+                    tagihanList = tagihanList.filter(item => item.id !== tagId);
                     saveState();
                     renderAll();
-                    renderBukuGajiTable();
-                    showNotification("Catatan riwayat gaji berhasil dihapus.", "info");
+                    showNotification(`Tagihan ${t.jenisTagihan} telah dihapus.`, "info");
                 }
             );
         }
 
-        function openThermalSlip(type, refId) {
-            const body = document.getElementById('slip-body-content');
-            const title = document.getElementById('slip-header-title');
-            const logo = document.getElementById('slip-school-logo');
+        function deleteCashTrx(trxId) {
+            const trx = transactions.find(t => t.id === trxId);
+            if (!trx) return;
 
-            document.getElementById('slip-school-name').textContent = settings.schoolName;
-            document.getElementById('slip-school-address').textContent = settings.schoolAddress;
-            document.getElementById('slip-operator').textContent = `Petugas: ${settings.treasurerName || 'Bendahara'}`;
-            document.getElementById('slip-timestamp').textContent = new Date().toLocaleString('id-ID');
-
-            if (settings.schoolLogo) {
-                logo.src = settings.schoolLogo;
-                logo.classList.remove('hidden');
-            } else {
-                logo.classList.add('hidden');
-            }
-
-            body.innerHTML = '';
-            let waPhone = "";
-            let waMsg = "";
-
-            if (type === 'SPP') {
-                title.textContent = 'BUKTI PEMBAYARAN SPP';
-                const rec = sppRecords.find(r => r.id === refId);
-                const siswa = rec ? siswaList.find(s => s.id === rec.siswaId) : null;
-                if (rec && siswa) {
-                    waPhone = siswa.wa || "";
-                    waMsg = `*${settings.schoolName.toUpperCase()}*\n` +
-                            `${settings.schoolAddress}\n` +
-                            `----------------------------------------\n` +
-                            `  *BUKTI PEMBAYARAN SPP RESMI*\n` +
-                            `----------------------------------------\n` +
-                            `ID TRX   : ${rec.id}\n` +
-                            `Tanggal  : ${rec.tglBayar}\n` +
-                            `Siswa    : ${siswa.nama} (${siswa.kelas})\n` +
-                            `NISN     : ${siswa.nisn}\n` +
-                            `Bulan    : SPP ${rec.bulan} (${rec.tahun})\n` +
-                            `Nominal  : ${formatRupiah(rec.nominal)}\n` +
-                            `Metode   : ${rec.metode}\n` +
-                            `----------------------------------------\n` +
-                            `Terima kasih atas pembayaran Anda.`;
-
-                    body.innerHTML = `
-                        <div class="flex justify-between"><span>No. Struk:</span><strong class="font-mono">${rec.id}</strong></div>
-                        <div class="flex justify-between"><span>Tanggal:</span><span>${rec.tglBayar}</span></div>
-                        <div class="flex justify-between"><span>Siswa:</span><strong>${siswa.nama}</strong></div>
-                        <div class="flex justify-between"><span>Kelas / NISN:</span><span>${siswa.kelas} / ${siswa.nisn}</span></div>
-                        <div class="border-t border-b border-dashed border-slate-300 py-1.5 my-1.5 space-y-1">
-                            <div class="flex justify-between font-bold"><span>SPP Bulan ${rec.bulan}:</span><span>${formatRupiah(rec.nominal)}</span></div>
-                            <div class="flex justify-between text-[10px] text-slate-500"><span>Metode:</span><span>${rec.metode}</span></div>
-                        </div>
-                        <div class="flex justify-between text-xs font-black"><span>TOTAL:</span><span class="text-emerald-700">${formatRupiah(rec.nominal)}</span></div>
-                    `;
+            showConfirmModal(
+                "Hapus Transaksi Kas",
+                `Apakah Anda yakin ingin menghapus transaksi kas "${trx.id}" (${formatRupiah(trx.nominal)})?`,
+                function() {
+                    transactions = transactions.filter(t => t.id !== trxId);
+                    saveState();
+                    renderAll();
+                    showNotification(`Transaksi kas ${trx.id} berhasil dihapus.`, "info");
                 }
-            } else if (type === 'TAGIHAN') {
-                title.textContent = 'KWITANSI PEMBAYARAN TAGIHAN';
-                const tag = tagihanList.find(t => t.id === refId);
-                const siswa = tag ? siswaList.find(s => s.id === tag.siswaId) : null;
-                if (tag && siswa) {
-                    const sisa = tag.nominalTagihan - tag.dibayar;
-                    waPhone = siswa.wa || "";
-                    waMsg = `*${settings.schoolName.toUpperCase()}*\n` +
-                            `${settings.schoolAddress}\n` +
-                            `----------------------------------------\n` +
-                            `  *KWITANSI PEMBAYARAN TAGIHAN*\n` +
-                            `----------------------------------------\n` +
-                            `ID Tagihan: ${tag.id}\n` +
-                            `Siswa     : ${siswa.nama} (${siswa.kelas})\n` +
-                            `Jenis     : ${tag.jenisTagihan}\n` +
-                            `Total Tag : ${formatRupiah(tag.nominalTagihan)}\n` +
-                            `Terbayar  : ${formatRupiah(tag.dibayar)}\n` +
-                            `Sisa      : ${formatRupiah(sisa)}\n` +
-                            `Status    : ${tag.status}\n` +
-                            `----------------------------------------\n` +
-                            `Terima kasih atas pembayaran Anda.`;
-
-                    body.innerHTML = `
-                        <div class="flex justify-between"><span>ID Tagihan:</span><strong class="font-mono">${tag.id}</strong></div>
-                        <div class="flex justify-between"><span>Siswa:</span><strong>${siswa.nama} (${siswa.kelas})</strong></div>
-                        <div class="flex justify-between"><span>Jenis:</span><span>${tag.jenisTagihan}</span></div>
-                        <div class="border-t border-b border-dashed border-slate-300 py-1.5 my-1.5 space-y-1">
-                            <div class="flex justify-between"><span>Total Tagihan:</span><span>${formatRupiah(tag.nominalTagihan)}</span></div>
-                            <div class="flex justify-between font-bold text-emerald-700"><span>Total Terbayar:</span><span>${formatRupiah(tag.dibayar)}</span></div>
-                            <div class="flex justify-between font-bold text-rose-600"><span>Sisa Tagihan:</span><span>${formatRupiah(sisa)}</span></div>
-                        </div>
-                        <div class="flex justify-between text-xs font-black"><span>STATUS:</span><span class="uppercase ${sisa <= 0 ? 'text-emerald-700' : 'text-amber-600'}">${tag.status}</span></div>
-                    `;
-                }
-            } else if (type === 'TABUNGAN') {
-                title.textContent = 'SLIP MUTASI TABUNGAN';
-                const tab = tabunganTrx.find(t => t.id === refId);
-                const siswa = tab ? siswaList.find(s => s.id === tab.siswaId) : null;
-                if (tab && siswa) {
-                    waPhone = siswa.wa || "";
-                    waMsg = `*${settings.schoolName.toUpperCase()}*\n` +
-                            `${settings.schoolAddress}\n` +
-                            `----------------------------------------\n` +
-                            `   *SLIP TRANSAKSI TABUNGAN*\n` +
-                            `----------------------------------------\n` +
-                            `ID Mutasi : ${tab.id}\n` +
-                            `Siswa     : ${siswa.nama} (${siswa.kelas})\n` +
-                            `No Rek    : REK-${siswa.nisn}\n` +
-                            `Tipe Trx  : ${tab.tipe} (${tab.sandi})\n` +
-                            `Nominal   : ${formatRupiah(tab.nominal)}\n` +
-                            `Saldo Akhir: ${formatRupiah(siswa.saldoTabungan)}\n` +
-                            `Ket       : ${tab.keterangan}\n` +
-                            `----------------------------------------\n` +
-                            `Terima kasih telah menabung di Bank Sekolah.`;
-
-                    body.innerHTML = `
-                        <div class="flex justify-between"><span>ID Mutasi:</span><strong class="font-mono">${tab.id}</strong></div>
-                        <div class="flex justify-between"><span>Siswa:</span><strong>${siswa.nama} (${siswa.kelas})</strong></div>
-                        <div class="flex justify-between"><span>No Rekening:</span><span class="font-mono font-bold">REK-${siswa.nisn}</span></div>
-                        <div class="border-t border-b border-dashed border-slate-300 py-1.5 my-1.5 space-y-1">
-                            <div class="flex justify-between font-bold"><span>Tipe (${tab.sandi}):</span><span class="${tab.tipe === 'SETOR' ? 'text-emerald-700' : 'text-rose-600'}">${tab.tipe}</span></div>
-                            <div class="flex justify-between"><span>Nominal:</span><span class="font-bold">${formatRupiah(tab.nominal)}</span></div>
-                        </div>
-                        <div class="flex justify-between text-xs font-black"><span>SALDO AKHIR:</span><span class="text-indigo-700">${formatRupiah(siswa.saldoTabungan)}</span></div>
-                    `;
-                }
-            } else if (type === 'PAYROLL') {
-                title.textContent = 'SLIP GAJI PEGAWAI';
-                const pay = payrollHistory.find(p => p.id === refId);
-                const guru = pay ? guruList.find(g => g.id === pay.guruId) : null;
-                if (pay && guru) {
-                    waPhone = guru.wa || "";
-                    waMsg = `*${settings.schoolName.toUpperCase()}*\n` +
-                            `${settings.schoolAddress}\n` +
-                            `----------------------------------------\n` +
-                            `     *SLIP GAJI RESMI PEGAWAI*\n` +
-                            `----------------------------------------\n` +
-                            `ID Slip   : ${pay.id}\n` +
-                            `Pegawai   : ${guru.nama}\n` +
-                            `NIP       : ${guru.nip}\n` +
-                            `Periode   : ${pay.periode}\n` +
-                            `Gapok+Tunj: ${formatRupiah((pay.gapok||0)+(pay.tunjangan||0))}\n` +
-                            `Honor Jam : ${formatRupiah(pay.honorJamTotal||0)} (${pay.jamMengajar||0} Jam)\n` +
-                            `Honor Hadir: ${formatRupiah(pay.honorHadirTotal||0)} (${pay.hariHadir||0} Hari)\n` +
-                            `Honor Keg : ${formatRupiah(pay.honorKegiatan||0)}\n` +
-                            `Potongan  : -${formatRupiah(pay.potongan||0)}\n` +
-                            `THP BERSIH: ${formatRupiah(pay.thp||0)}\n` +
-                            `----------------------------------------\n` +
-                            `Terima kasih atas dedikasi & pengabdian Anda.`;
-
-                    let kegBreakdown = '';
-                    if (pay.honorKegiatanList && pay.honorKegiatanList.length > 0) {
-                        kegBreakdown = pay.honorKegiatanList.map(k => `<div class="flex justify-between text-[10px] text-purple-700 pl-2"><span>• ${k.ket}:</span><span>${formatRupiah(k.nominal)}</span></div>`).join('');
-                    }
-
-                    body.innerHTML = `
-                        <div class="flex justify-between"><span>ID Slip:</span><strong class="font-mono">${pay.id}</strong></div>
-                        <div class="flex justify-between"><span>Pegawai:</span><strong>${guru.nama}</strong></div>
-                        <div class="flex justify-between"><span>NIP / Jabatan:</span><span>${guru.nip}</span></div>
-                        <div class="flex justify-between"><span>Periode:</span><span class="font-bold text-indigo-700">${pay.periode}</span></div>
-                        <div class="border-t border-b border-dashed border-slate-300 py-1.5 my-1.5 space-y-1 text-[10px]">
-                            <div class="flex justify-between"><span>Gaji Pokok:</span><span>${formatRupiah(pay.gapok)}</span></div>
-                            <div class="flex justify-between"><span>Tunjangan:</span><span>${formatRupiah(pay.tunjangan)}</span></div>
-                            <div class="flex justify-between"><span>Honor Mengajar (${pay.jamMengajar} jam):</span><span>${formatRupiah(pay.honorJamTotal)}</span></div>
-                            <div class="flex justify-between"><span>Honor Hadir (${pay.hariHadir} hari):</span><span>${formatRupiah(pay.honorHadirTotal)}</span></div>
-                            <div class="flex justify-between font-semibold"><span>Total Honor Kegiatan:</span><span>${formatRupiah(pay.honorKegiatan || 0)}</span></div>
-                            ${kegBreakdown}
-                            <div class="flex justify-between text-rose-600 font-bold"><span>Potongan / Kasbon:</span><span>-${formatRupiah(pay.potongan || 0)}</span></div>
-                        </div>
-                        <div class="flex justify-between text-xs font-black"><span>THP BERSIH:</span><span class="text-purple-800">${formatRupiah(pay.thp)}</span></div>
-                    `;
-                }
-            } else if (type === 'KAS' || type === 'REF') {
-                title.textContent = 'BUKTI TRANSAKSI KAS';
-                const trx = transactions.find(t => t.id === refId || t.refId === refId);
-                if (trx) {
-                    const isMasuk = trx.jenis === 'MASUK';
-                    waMsg = `*${settings.schoolName.toUpperCase()}*\n` +
-                            `${settings.schoolAddress}\n` +
-                            `----------------------------------------\n` +
-                            `  *BUKTI TRANSAKSI KAS RESMI*\n` +
-                            `----------------------------------------\n` +
-                            `ID TRX   : ${trx.id}\n` +
-                            `Tanggal  : ${trx.tanggal || trx.tgl}\n` +
-                            `Jenis    : ${trx.jenis}\n` +
-                            `Kategori : ${trx.kategori}\n` +
-                            `Uraian   : ${trx.keterangan}\n` +
-                            `Nominal  : ${formatRupiah(trx.nominal)}\n` +
-                            `Metode   : ${trx.metode || 'Tunai'}\n` +
-                            `----------------------------------------\n` +
-                            `Terima kasih.`;
-
-                    body.innerHTML = `
-                        <div class="flex justify-between"><span>ID TRX:</span><strong class="font-mono">${trx.id}</strong></div>
-                        <div class="flex justify-between"><span>Tanggal:</span><span>${trx.tanggal || trx.tgl}</span></div>
-                        <div class="flex justify-between"><span>Jenis Transaksi:</span><strong class="${isMasuk ? 'text-emerald-600' : 'text-rose-600'}">${trx.jenis}</strong></div>
-                        <div class="flex justify-between"><span>Kategori RAPBS:</span><span class="font-semibold">${trx.kategori}</span></div>
-                        <div class="border-t border-b border-dashed border-slate-300 py-1.5 my-1.5 space-y-1">
-                            <div class="text-[11px] text-slate-700 font-medium">Uraian: ${trx.keterangan}</div>
-                            <div class="flex justify-between text-[10px] text-slate-500"><span>Metode:</span><span>${trx.metode || 'Tunai'}</span></div>
-                        </div>
-                        <div class="flex justify-between text-xs font-black"><span>NOMINAL:</span><span class="${isMasuk ? 'text-emerald-700' : 'text-rose-700'}">${formatRupiah(trx.nominal)}</span></div>
-                    `;
-                }
-            }
-
-            const phoneInput = document.getElementById('slip-wa-phone-input');
-            if (phoneInput) phoneInput.value = waPhone;
-
-            activeWAContext = { phone: waPhone, message: waMsg, type: type, id: refId };
-            openModal('modal-thermal-slip');
-        }
-
-        function printContainer(elementId) {
-            window.print();
-        }
-
-        function downloadSlipPDF() {
-            const element = document.getElementById('printable-area');
-            if (!element) return;
-            const opt = {
-                margin:       [5, 5, 5, 5],
-                filename:     `Struk_${activeWAContext.type || 'Transaksi'}_${activeWAContext.id || Date.now()}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: [80, 200], orientation: 'portrait' }
-            };
-            html2pdf().set(opt).from(element).save();
-            showNotification("Mengunduh berkas PDF...", "success");
-        }
-
-        function shareToWhatsAppPDF() {
-            const inputPhone = document.getElementById('slip-wa-phone-input').value.trim();
-            let phone = inputPhone || activeWAContext.phone || '';
-            
-            phone = phone.replace(/[^0-9]/g, '');
-            if (phone.startsWith('0')) {
-                phone = '62' + phone.slice(1);
-            }
-            
-            if (!phone) {
-                showNotification("Harap masukkan nomor WhatsApp tujuan!", "error");
-                return;
-            }
-
-            downloadSlipPDF();
-
-            const encodedText = encodeURIComponent(activeWAContext.message || "Bukti Transaksi Keuangan Sekolah");
-            const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
-            
-            window.open(waUrl, '_blank');
-            showNotification("Pesan WhatsApp dibuka & PDF terunduh!", "success");
+            );
         }
 
         function exportCashLedgerCSV() {
-            let csv = "ID TRX,Tanggal,Jenis,Kategori RAPBS,Keterangan,Nominal,Metode\n";
+            if (transactions.length === 0) {
+                showNotification("Tidak ada data transaksi kas untuk diexport!", "error");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,ID TRX,Tanggal,Jenis,Kategori RAPBS,Keterangan,Nominal,Metode\n";
             transactions.forEach(t => {
-                const ket = `"${(t.keterangan || '').replace(/"/g, '""')}"`;
-                const kat = `"${(t.kategori || '').replace(/"/g, '""')}"`;
-                csv += `${t.id},${t.tanggal || t.tgl},${t.jenis},${kat},${ket},${t.nominal},${t.metode || 'Tunai'}\n`;
+                const row = [
+                    t.id,
+                    t.tanggal || t.tgl,
+                    t.jenis,
+                    `"${(t.kategori || '').replace(/"/g, '""')}"`,
+                    `"${(t.keterangan || '').replace(/"/g, '""')}"`,
+                    t.nominal,
+                    t.metode || 'Tunai'
+                ].join(",");
+                csvContent += row + "\n";
             });
 
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
+            const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Buku_Kas_Umum_${settings.schoolName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Buku_Kas_Sekolah_${Date.now()}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            showNotification("Buku Kas Umum berhasil diexport ke CSV!", "success");
+            showNotification("Berhasil mengeksport Buku Kas ke format CSV!", "success");
+        }
+
+        function renderManageRapbsTable() {
+            const tbody = document.getElementById('manage-rapbs-tbody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            rapbsList.forEach(r => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-100 hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="p-1.5"><span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${r.tipe === 'MASUK' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${r.tipe}</span></td>
+                    <td class="p-1.5 font-mono font-bold text-slate-700">${r.kode}</td>
+                    <td class="p-1.5 font-medium text-slate-800">${r.nama}</td>
+                    <td class="p-1.5 text-right font-bold text-slate-900">${formatRupiah(r.target)}</td>
+                    <td class="p-1.5 text-center">
+                        <button onclick="deleteRapbsPos('${r.id}')" class="text-rose-600 hover:text-rose-800"><i class="fa-solid fa-trash-can"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderBukuGajiTable() {
+            const tbody = document.getElementById('bgaji-table-body');
+            if (!tbody) return;
+
+            const filterGuru = document.getElementById('bgaji-filter-guru')?.value || '';
+            const filterBulan = document.getElementById('bgaji-filter-bulan')?.value || '';
+
+            const filtered = payrollHistory.filter(p => {
+                const matchGuru = filterGuru === '' || p.guruId === filterGuru;
+                const matchBulan = filterBulan === '' || p.periode === filterBulan;
+                return matchGuru && matchBulan;
+            });
+
+            tbody.innerHTML = '';
+            let totalTHP = 0;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-400">Belum ada data pencairan gaji terdaftar</td></tr>`;
+            } else {
+                filtered.forEach((p, idx) => {
+                    totalTHP += p.thp;
+                    const g = guruList.find(item => item.id === p.guruId) || { nama: 'Unknown', nip: '-' };
+                    const tr = document.createElement('tr');
+                    tr.className = 'border-b border-slate-200 hover:bg-slate-50';
+                    tr.innerHTML = `
+                        <td class="p-2 border border-slate-300 text-center font-bold">${idx + 1}</td>
+                        <td class="p-2 border border-slate-300">
+                            <div class="font-bold text-slate-900">${p.tanggal}</div>
+                            <div class="text-[10px] font-mono text-slate-500">${p.id}</div>
+                        </td>
+                        <td class="p-2 border border-slate-300">
+                            <div class="font-bold text-slate-900">${g.nama}</div>
+                            <div class="text-[10px] text-slate-500 font-mono">NIP: ${g.nip}</div>
+                        </td>
+                        <td class="p-2 border border-slate-300 text-right font-mono">${formatRupiah(p.gapok + p.tunjangan)}</td>
+                        <td class="p-2 border border-slate-300 text-right font-mono text-emerald-700">${formatRupiah((p.honorJamTotal || 0) + (p.honorHadirTotal || 0) + (p.honorKegiatan || 0))}</td>
+                        <td class="p-2 border border-slate-300 text-right font-mono text-rose-700">-${formatRupiah(p.potongan)}</td>
+                        <td class="p-2 border border-slate-300 text-right font-mono font-black text-purple-900">${formatRupiah(p.thp)}</td>
+                        <td class="p-2 border border-slate-300 text-center no-print">
+                            <button onclick="openThermalSlip('PAYROLL', '${p.id}')" class="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded font-bold text-xs">
+                                <i class="fa-solid fa-receipt mr-1"></i> Slip
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            document.getElementById('bgaji-total-thp').textContent = formatRupiah(totalTHP);
+            document.getElementById('bgaji-sekolah-nama').textContent = settings.schoolName;
+            document.getElementById('bgaji-sekolah-alamat').textContent = settings.schoolAddress;
+            document.getElementById('bgaji-kepsek-nama').textContent = `( ${settings.principalName} )`;
+            document.getElementById('bgaji-bendahara-nama').textContent = `( ${settings.treasurerName} )`;
+        }
+
+        function openBukuGajiModal() {
+            renderBukuGajiTable();
+            openModal('modal-buku-gaji');
         }
 
         function handleLogoUpload(e) {
@@ -4188,113 +3967,164 @@
             const reader = new FileReader();
             reader.onload = function(evt) {
                 tempLogoData = evt.target.result;
-                settings.schoolLogo = tempLogoData;
-                updateLogoUI();
-                saveState();
-                showNotification("Logo sekolah berhasil diperbarui!", "success");
+                displayLogoPreview(tempLogoData);
+                showNotification("Logo berhasil dimuat. Klik 'Simpan Pengaturan' untuk memperbarui.", "info");
             };
             reader.readAsDataURL(file);
         }
 
-        function removeLogo() {
-            settings.schoolLogo = "";
-            tempLogoData = "";
-            updateLogoUI();
-            saveState();
-            showNotification("Logo sekolah dihapus.", "info");
-        }
-
-        function updateLogoUI() {
-            const prevIcon = document.getElementById('logo-preview-icon');
-            const prevImg = document.getElementById('logo-preview-img');
+        function displayLogoPreview(src) {
+            const icon = document.getElementById('logo-preview-icon');
+            const img = document.getElementById('logo-preview-img');
             const btnRemove = document.getElementById('btn-remove-logo');
-            const headIcon = document.getElementById('header-logo-icon');
-            const headImg = document.getElementById('header-logo-img');
 
-            if (settings.schoolLogo) {
-                if (prevImg) { prevImg.src = settings.schoolLogo; prevImg.classList.remove('hidden'); }
-                if (prevIcon) prevIcon.classList.add('hidden');
+            if (src) {
+                if (icon) icon.classList.add('hidden');
+                if (img) {
+                    img.src = src;
+                    img.classList.remove('hidden');
+                }
                 if (btnRemove) btnRemove.classList.remove('hidden');
-
-                if (headImg) { headImg.src = settings.schoolLogo; headImg.classList.remove('hidden'); }
-                if (headIcon) headIcon.classList.add('hidden');
             } else {
-                if (prevImg) { prevImg.classList.add('hidden'); prevImg.src = ''; }
-                if (prevIcon) prevIcon.classList.remove('hidden');
+                if (icon) icon.classList.remove('hidden');
+                if (img) {
+                    img.src = '';
+                    img.classList.add('hidden');
+                }
                 if (btnRemove) btnRemove.classList.add('hidden');
-
-                if (headImg) { headImg.classList.add('hidden'); headImg.src = ''; }
-                if (headIcon) headIcon.classList.remove('hidden');
             }
         }
 
-        function loadSettingsToForm() {
-            if (document.getElementById('set-school-name')) document.getElementById('set-school-name').value = settings.schoolName || '';
-            if (document.getElementById('set-school-address')) document.getElementById('set-school-address').value = settings.schoolAddress || '';
-            if (document.getElementById('set-principal-name')) document.getElementById('set-principal-name').value = settings.principalName || '';
-            if (document.getElementById('set-treasurer-name')) document.getElementById('set-treasurer-name').value = settings.treasurerName || '';
-            if (document.getElementById('set-spp-amount')) document.getElementById('set-spp-amount').value = settings.standardSPP || 250000;
-            if (document.getElementById('set-autodebet-sandi')) document.getElementById('set-autodebet-sandi').value = settings.sandiAutodebet || '102-DBT';
-            
-            const pinCheckbox = document.getElementById('set-pin-enabled');
-            if (pinCheckbox) {
-                pinCheckbox.checked = settings.pinEnabled !== false;
-            }
-            if (document.getElementById('set-app-pin')) {
-                document.getElementById('set-app-pin').value = settings.appPin || '1234';
-            }
-            togglePinSettingsUI();
+        function removeLogo() {
+            tempLogoData = "";
+            settings.schoolLogo = "";
+            displayLogoPreview("");
+            document.getElementById('set-school-logo-input').value = "";
+            showNotification("Logo sekolah dihapus. Simpan untuk memberlakukan perubahan.", "info");
+        }
 
-            updateLogoUI();
-            
-            const headName = document.getElementById('school-name-display');
-            if (headName) headName.textContent = settings.schoolName || 'SMP IT NU Asshofiyah Balad';
-            if (document.getElementById('pin-lock-school-name')) {
-                document.getElementById('pin-lock-school-name').textContent = settings.schoolName || 'SMP IT NU Asshofiyah Balad';
+        function updateLogoDisplays() {
+            const logoSrc = settings.schoolLogo || "";
+            const applyLogo = (iconId, imgId, boxId) => {
+                const icon = document.getElementById(iconId);
+                const img = document.getElementById(imgId);
+                if (logoSrc) {
+                    if (icon) icon.classList.add('hidden');
+                    if (img) {
+                        img.src = logoSrc;
+                        img.classList.remove('hidden');
+                    }
+                } else {
+                    if (icon) icon.classList.remove('hidden');
+                    if (img) {
+                        img.src = '';
+                        img.classList.add('hidden');
+                    }
+                }
+            };
+
+            applyLogo('header-logo-icon', 'header-logo-img');
+            applyLogo('btab-default-icon', 'btab-school-logo');
+            applyLogo('kspp-default-icon', 'kspp-school-logo');
+            applyLogo('ptagbook-default-icon', 'ptagbook-school-logo');
+            applyLogo('bgaji-default-icon', 'bgaji-school-logo');
+            applyLogo('slip-default-icon', 'slip-school-logo');
+        }
+
+        function loadSettingsToUI() {
+            document.getElementById('set-school-name').value = settings.schoolName || '';
+            document.getElementById('set-school-address').value = settings.schoolAddress || '';
+            document.getElementById('set-principal-name').value = settings.principalName || '';
+            document.getElementById('set-treasurer-name').value = settings.treasurerName || '';
+            document.getElementById('set-spp-amount').value = settings.standardSPP || 250000;
+            document.getElementById('set-autodebet-sandi').value = settings.sandiAutodebet || '102-DBT';
+            document.getElementById('set-app-pin').value = settings.appPin || '1234';
+            document.getElementById('set-pin-enabled').checked = !!settings.pinEnabled;
+
+            tempLogoData = settings.schoolLogo || '';
+            displayLogoPreview(tempLogoData);
+            togglePinSettingsUI();
+            updateLogoDisplays();
+
+            document.getElementById('school-name-display').textContent = settings.schoolName;
+            document.getElementById('pin-lock-school-name').textContent = settings.schoolName;
+            document.getElementById('slip-school-name').textContent = settings.schoolName;
+            document.getElementById('slip-school-address').textContent = settings.schoolAddress;
+            document.getElementById('btab-nama-sekolah').textContent = settings.schoolName;
+            document.getElementById('btab-alamat-sekolah').textContent = settings.schoolAddress;
+            document.getElementById('kspp-nama-sekolah').textContent = settings.schoolName;
+            document.getElementById('kspp-alamat-sekolah').textContent = settings.schoolAddress;
+            document.getElementById('ptagbook-nama-sekolah').textContent = settings.schoolName;
+            document.getElementById('ptagbook-alamat-sekolah').textContent = settings.schoolAddress;
+            document.getElementById('btab-bendahara-nama').textContent = `( ${settings.treasurerName} )`;
+            document.getElementById('kspp-bendahara-nama').textContent = `( ${settings.treasurerName} )`;
+            document.getElementById('ptagbook-bendahara-nama').textContent = `( ${settings.treasurerName} )`;
+        }
+
+        function saveSettings() {
+            settings.schoolName = document.getElementById('set-school-name').value.trim() || defaultSettings.schoolName;
+            settings.schoolAddress = document.getElementById('set-school-address').value.trim() || defaultSettings.schoolAddress;
+            settings.principalName = document.getElementById('set-principal-name').value.trim() || defaultSettings.principalName;
+            settings.treasurerName = document.getElementById('set-treasurer-name').value.trim() || defaultSettings.treasurerName;
+            settings.standardSPP = Number(document.getElementById('set-spp-amount').value) || 250000;
+            settings.sandiAutodebet = document.getElementById('set-autodebet-sandi').value.trim() || '102-DBT';
+            settings.schoolLogo = tempLogoData;
+
+            const newPin = document.getElementById('set-app-pin').value.trim();
+            if (newPin.length < 4) {
+                showNotification("PIN aplikasi minimal 4 digit angka!", "error");
+                return;
             }
+            settings.appPin = newPin;
+            settings.pinEnabled = document.getElementById('set-pin-enabled').checked;
+
+            saveState();
+            loadSettingsToUI();
+            renderAll();
+            showNotification("Pengaturan sekolah & sistem berhasil disimpan!", "success");
         }
 
         function togglePinSettingsUI() {
-            const isChecked = document.getElementById('set-pin-enabled')?.checked;
-            const fieldsBox = document.getElementById('pin-settings-fields');
-            if (fieldsBox) {
-                if (isChecked) fieldsBox.classList.remove('hidden');
-                else fieldsBox.classList.add('hidden');
+            const enabled = document.getElementById('set-pin-enabled').checked;
+            const fields = document.getElementById('pin-settings-fields');
+            if (fields) {
+                if (enabled) fields.classList.remove('hidden');
+                else fields.classList.add('hidden');
             }
         }
 
         function lockApp() {
             const overlay = document.getElementById('app-pin-lock-overlay');
-            const inputField = document.getElementById('pin-input-field');
-            const errorMsg = document.getElementById('pin-error-msg');
-            
-            if (errorMsg) errorMsg.classList.add('hidden');
-            if (inputField) inputField.value = '';
-            
             if (overlay) {
+                const pinInput = document.getElementById('pin-input-field');
+                if (pinInput) pinInput.value = '';
+                const err = document.getElementById('pin-error-msg');
+                if (err) err.classList.add('hidden');
                 overlay.classList.remove('hidden');
                 setTimeout(() => {
-                    if (inputField) inputField.focus();
+                    if (pinInput) pinInput.focus();
                 }, 100);
             }
         }
 
         function verifyPin() {
-            const inputField = document.getElementById('pin-input-field');
+            const pinInput = document.getElementById('pin-input-field');
+            const input = pinInput ? pinInput.value : '';
             const errorMsg = document.getElementById('pin-error-msg');
-            const enteredPin = inputField ? inputField.value.trim() : '';
-            const correctPin = settings.appPin || '1234';
+            const currentPin = settings.appPin || '1234';
 
-            if (enteredPin === correctPin) {
-                document.getElementById('app-pin-lock-overlay')?.classList.add('hidden');
-                if (errorMsg) errorMsg.classList.add('hidden');
-                if (inputField) inputField.value = '';
-                showNotification("Aplikasi berhasil dibuka!", "success");
+            if (input === currentPin) {
+                closeModal('app-pin-lock-overlay');
+                showNotification("Akses aplikasi berhasil dibuka!", "success");
             } else {
                 if (errorMsg) errorMsg.classList.remove('hidden');
-                if (inputField) {
-                    inputField.value = '';
-                    inputField.focus();
+                if (pinInput) {
+                    pinInput.value = '';
+                    pinInput.classList.add('animate-shake', 'border-rose-500');
+                    setTimeout(() => {
+                        pinInput.classList.remove('animate-shake', 'border-rose-500');
+                    }, 400);
+                    pinInput.focus();
                 }
             }
         }
@@ -4302,89 +4132,59 @@
         function handlePinInputKeyup(e) {
             if (e.key === 'Enter') {
                 verifyPin();
+            }
+        }
+
+        function toggleFullScreen() {
+            const icon = document.getElementById('icon-fullscreen');
+            const text = document.getElementById('text-fullscreen');
+
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(() => {
+                    if (icon) icon.className = "fa-solid fa-compress mr-1.5 text-amber-400";
+                    if (text) text.textContent = "Keluar Layar Penuh";
+                }).catch(err => {
+                    showNotification("Perangkat tidak mendukung mode fullscreen auto.", "error");
+                });
             } else {
-                const errorMsg = document.getElementById('pin-error-msg');
-                if (errorMsg) errorMsg.classList.add('hidden');
-            }
-        }
-
-        function saveSettings() {
-            settings.schoolName = document.getElementById('set-school-name').value;
-            settings.schoolAddress = document.getElementById('set-school-address').value;
-            settings.principalName = document.getElementById('set-principal-name').value;
-            settings.treasurerName = document.getElementById('set-treasurer-name').value;
-            settings.standardSPP = Number(document.getElementById('set-spp-amount').value);
-            settings.sandiAutodebet = document.getElementById('set-autodebet-sandi').value;
-
-            const pinEnabled = document.getElementById('set-pin-enabled').checked;
-            const newPin = document.getElementById('set-app-pin').value.trim();
-
-            if (pinEnabled && newPin.length < 4) {
-                showNotification("PIN Keamanan minimal harus 4 digit!", "error");
-                return;
-            }
-
-            settings.pinEnabled = pinEnabled;
-            settings.appPin = newPin || '1234';
-
-            saveState();
-            renderAll();
-            showNotification("Pengaturan identitas & keamanan PIN berhasil disimpan!", "success");
-        }
-
-        function resetSystemData() {
-            showConfirmModal(
-                "Reset Sistem ke Seed Awal",
-                "Apakah Anda yakin ingin mengembalikan seluruh data ke data percontohan (seed) awal? Data transaksi yang dibuat saat ini akan digantikan.",
-                function() {
-                    localStorage.clear();
-                    settings = { ...defaultSettings };
-                    rapbsList = [ ...defaultRAPBS ];
-                    siswaList = [ ...defaultSiswa ];
-                    guruList = [ ...defaultGuru ];
-                    sppRecords = [ ...defaultSPPRecords ];
-                    tagihanList = [ ...defaultTagihan ];
-                    tabunganTrx = [ ...defaultTabunganTrx ];
-                    payrollHistory = [ ...defaultPayrollHistory ];
-                    transactions = [ ...defaultTransactions ];
-
-                    saveState();
-                    renderAll();
-                    showNotification("Sistem berhasil di-reset ke data seed awal!", "info");
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().then(() => {
+                        if (icon) icon.className = "fa-solid fa-expand mr-1.5 text-emerald-400";
+                        if (text) text.textContent = "Layar Penuh";
+                    });
                 }
-            );
+            }
         }
 
         function executeResetProduksi() {
-            const confirmText = document.getElementById('reset-confirm-text').value.trim().toUpperCase();
-            if (confirmText !== 'PRODUKSI') {
-                showNotification("Kata konfirmasi tidak cocok! Ketik PRODUKSI dengan benar.", "error");
+            const confirmVal = document.getElementById('reset-confirm-text').value.trim().toUpperCase();
+            if (confirmVal !== 'PRODUKSI') {
+                showNotification("Ketik kata 'PRODUKSI' dengan tepat untuk konfirmasi reset!", "error");
                 return;
             }
 
             const mode = document.getElementById('reset-mode-select').value;
-
             if (mode === 'TRANSACTIONS_ONLY') {
                 sppRecords = [];
-                tabunganTrx = [];
-                payrollHistory = [];
-                transactions = [];
-                siswaList.forEach(s => s.saldoTabungan = 0);
                 tagihanList.forEach(t => {
                     t.dibayar = 0;
                     t.status = 'UNPAID';
                 });
-                showNotification("Reset Berhasil: Seluruh transaksi & saldo telah dibersihkan! Master Siswa, Guru & RAPBS siap digunakan.", "success");
+                tabunganTrx = [];
+                payrollHistory = [];
+                transactions = [];
+                siswaList.forEach(s => s.saldoTabungan = 0);
+                showNotification("Berhasil! Seluruh transaksi & saldo telah direset ke Nol (Master siswa, guru, & RAPBS aman).", "success");
             } else if (mode === 'FULL_CLEAN') {
                 siswaList = [];
                 guruList = [];
-                rapbsList = [];
                 sppRecords = [];
                 tagihanList = [];
                 tabunganTrx = [];
                 payrollHistory = [];
                 transactions = [];
-                showNotification("Reset Total Berhasil: Seluruh database telah dikosongkan (Clean Slate).", "success");
+                rapbsList = defaultRAPBS;
+                showNotification("Clean Slate Total Berhasil! Seluruh data transaksi & master telah dibersihkan.", "success");
             }
 
             saveState();
@@ -4393,86 +4193,157 @@
             document.getElementById('reset-confirm-text').value = '';
         }
 
-        async function testConnection() {
-            const logBox = document.getElementById('gas-diagnostic-log');
-            if (!logBox) return;
+        function resetSystemData() {
+            showConfirmModal(
+                "Reset ke Seed Awal",
+                "Apakah Anda yakin ingin mengembalikan seluruh data ke sampel/seed bawaan awal aplikasi?",
+                function() {
+                    settings = defaultSettings;
+                    rapbsList = defaultRAPBS;
+                    siswaList = defaultSiswa;
+                    guruList = defaultGuru;
+                    sppRecords = defaultSPPRecords;
+                    tagihanList = defaultTagihan;
+                    tabunganTrx = defaultTabunganTrx;
+                    payrollHistory = defaultPayrollHistory;
+                    transactions = defaultTransactions;
 
-            logBox.classList.remove('hidden');
-            logBox.innerHTML = `<div>> [${new Date().toLocaleTimeString()}] Memulai pengujian koneksi ke Google Apps Script...</div>`;
+                    saveState();
+                    loadSettingsToUI();
+                    renderAll();
+                    showNotification("Sistem berhasil dikembalikan ke data sampel awal!", "success");
+                }
+            );
+        }
+
+        async function testConnection() {
+            const log = document.getElementById('gas-diagnostic-log');
+            if (log) {
+                log.classList.remove('hidden');
+                log.innerHTML = `[${new Date().toLocaleTimeString()}] Memulai tes diagnosa Apps Script...<br>`;
+            }
 
             const activeUrl = getActiveGASUrl();
-            logBox.innerHTML += `<div>> Endpoint: ${activeUrl}</div>`;
+            if (!activeUrl) {
+                if (log) log.innerHTML += `<span class="text-rose-400">[ERROR] URL Web App Google Apps Script tidak valid!</span>`;
+                return;
+            }
+
+            if (log) log.innerHTML += `[INFO] Mengirim ping GET request ke server Google Apps Script...<br>`;
 
             try {
-                const start = Date.now();
-                const response = await fetch(activeUrl);
-                const latency = Date.now() - start;
+                const res = await fetch(activeUrl);
+                if (log) log.innerHTML += `[INFO] Respon status HTTP: ${res.status}<br>`;
 
-                if (!response.ok) {
-                    throw new Error(`HTTP Error Status: ${response.status}`);
-                }
+                const resText = await res.text();
+                if (log) log.innerHTML += `[SUCCESS] Kinetik jaringan tersambung. Mengurai payload JSON...<br>`;
 
-                const resText = await response.text();
-                logBox.innerHTML += `<div>> Raw Respon (OK): ${resText.slice(0, 100)}...</div>`;
-                logBox.innerHTML += `<div class="text-emerald-400 font-bold">> STATUS: KONEKSI SANGAT BAIK! Latency: ${latency}ms</div>`;
-                showNotification(`Uji Diagnostik Berhasil! Respon ${latency}ms.`, "success");
+                const parsed = JSON.parse(resText);
+                if (log) log.innerHTML += `<span class="text-emerald-400">[OK] Backend status: ${parsed.status}. Koneksi Sheets sempurna!</span>`;
+                showNotification("Tes Diagnostik Sukses: Google Apps Script Terhubung!", "success");
             } catch (err) {
-                logBox.innerHTML += `<div class="text-rose-400 font-bold">> KESALAHAN: ${err.message}</div>`;
-                logBox.innerHTML += `<div class="text-amber-400">> Catatan: Pastikan Apps Script telah dideploy sebagai Web App dengan akses 'Anyone' (Siapa Saja).</div>`;
-                showNotification("Uji Diagnostik Gagal: Periksa log detail.", "error");
+                if (log) log.innerHTML += `<span class="text-rose-400">[FAIL] Diagnosa gagal: ${err.message}</span>`;
+                showNotification("Tes Diagnostik Gagal: " + err.message, "error");
             }
         }
 
-        function updateClock() {
-            const now = new Date();
-            const clockEl = document.getElementById('clock-display');
-            const dateEl = document.getElementById('date-display');
-
-            if (clockEl) {
-                clockEl.textContent = now.toLocaleTimeString('id-ID') + ' WIB';
-            }
-            if (dateEl) {
-                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                dateEl.textContent = now.toLocaleDateString('id-ID', options);
-            }
-        }
-
-        function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.warn(`Error attempting to enable full-screen mode: ${err.message}`);
+        function populateSelectOptions() {
+            const fillSiswaSelect = (elementId) => {
+                const sel = document.getElementById(elementId);
+                if (!sel) return;
+                const prev = sel.value;
+                sel.innerHTML = '';
+                siswaList.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.nama} (${s.kelas} - NISN: ${s.nisn})`;
+                    sel.appendChild(opt);
                 });
-                const text = document.getElementById('text-fullscreen');
-                if (text) text.textContent = "Keluar Fullscreen";
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
-                const text = document.getElementById('text-fullscreen');
-                if (text) text.textContent = "Layar Penuh";
+                if (prev) sel.value = prev;
+            };
+
+            fillSiswaSelect('tsetor-siswa-id');
+            fillSiswaSelect('ttarik-siswa-id');
+            fillSiswaSelect('ntag-siswa-id');
+            fillSiswaSelect('btab-select-siswa');
+            fillSiswaSelect('kspp-select-siswa');
+            fillSiswaSelect('ptagbook-select-siswa');
+
+            const kelasSet = new Set(siswaList.map(s => s.kelas));
+            const filterKelas = document.getElementById('siswa-filter-kelas');
+            if (filterKelas) {
+                const curVal = filterKelas.value;
+                filterKelas.innerHTML = '<option value="">-- Semua Kelas --</option>';
+                Array.from(kelasSet).sort().forEach(k => {
+                    const opt = document.createElement('option');
+                    opt.value = k;
+                    opt.textContent = `Kelas ${k}`;
+                    filterKelas.appendChild(opt);
+                });
+                filterKelas.value = curVal;
             }
+
+            const bgajiGuruSel = document.getElementById('bgaji-filter-guru');
+            if (bgajiGuruSel) {
+                const curVal = bgajiGuruSel.value;
+                bgajiGuruSel.innerHTML = '<option value="">-- Semua Pegawai --</option>';
+                guruList.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    opt.textContent = `${g.nama} (${g.nip})`;
+                    bgajiGuruSel.appendChild(opt);
+                });
+                bgajiGuruSel.value = curVal;
+            }
+        }
+
+        function onKasJenisChanged() {
+            const jenis = document.getElementById('kas-jenis')?.value;
+            const selectRapbs = document.getElementById('kas-kategori-rapbs');
+            if (!selectRapbs) return;
+
+            selectRapbs.innerHTML = '';
+            const list = rapbsList.filter(r => r.tipe === (jenis || 'MASUK'));
+            list.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r.nama;
+                opt.textContent = `[${r.kode}] ${r.nama}`;
+                selectRapbs.appendChild(opt);
+            });
         }
 
         function renderAll() {
-            loadSettingsToForm();
+            populateSelectOptions();
             renderDashboard();
             renderSiswaTable();
             renderTagihanTable();
             renderTabunganTable();
             renderGuruTable();
             renderKasAndRAPBSTables();
-            populateSiswaSelects();
+        }
+
+        function updateClock() {
+            const clock = document.getElementById('clock-display');
+            const date = document.getElementById('date-display');
+            const now = new Date();
+
+            if (clock) {
+                clock.textContent = now.toLocaleTimeString('id-ID') + ' WIB';
+            }
+            if (date) {
+                const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                date.textContent = now.toLocaleDateString('id-ID', options);
+            }
         }
 
         window.onload = function() {
+            loadSettingsToUI();
             renderAll();
             setInterval(updateClock, 1000);
             updateClock();
 
-            // Check PIN lock on load
-            if (settings.pinEnabled !== TRUE) {
-                lockApp();
-            }
+            // Kunci aplikasi secara otomatis saat aplikasi dibuka
+            lockApp();
         };
     </script>
 </body>
