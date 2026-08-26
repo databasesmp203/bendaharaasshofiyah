@@ -933,6 +933,61 @@
         </div>
     </div>
 
+
+    <!-- Modal: Edit Transaksi Tabungan -->
+    <div id="modal-edit-tabungan-trx" class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-3 mb-4">
+                <h3 class="font-bold text-slate-900">
+                    <i class="fa-solid fa-pen-to-square text-amber-600 mr-2"></i>Edit Transaksi Tabungan
+                </h3>
+                <button type="button" onclick="closeModal('modal-edit-tabungan-trx')" class="text-slate-400 hover:text-slate-700">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <form id="form-edit-tabungan-trx" onsubmit="submitEditTabunganTrx(event)" class="space-y-4">
+                <input type="hidden" id="etab-id">
+                <input type="hidden" id="etab-old-nominal">
+
+                <div class="bg-slate-50 rounded-xl p-3 text-xs">
+                    <div class="font-bold text-slate-700">Siswa</div>
+                    <div id="etab-siswa" class="font-black text-slate-900 mt-1">-</div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal</label>
+                        <input id="etab-tanggal" type="date" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Transaksi</label>
+                        <select id="etab-tipe" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold">
+                            <option value="SETOR">SETOR</option>
+                            <option value="TARIK">TARIK</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nominal</label>
+                    <input id="etab-nominal" type="number" min="1" step="1" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan</label>
+                    <textarea id="etab-keterangan" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modal-edit-tabungan-trx')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i>Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal 3A: Passbook Tabungan -->
     <div id="modal-buku-tabungan" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl border border-slate-100 space-y-4 max-h-[90vh] flex flex-col">
@@ -3425,6 +3480,113 @@
         }
 
 
+
+        function openEditTabunganTrxModal(trxId) {
+            const trx = tabunganTrx.find(t => t.id === trxId);
+            if (!trx) {
+                showNotification("Transaksi tabungan tidak ditemukan.", "error");
+                return;
+            }
+
+            const siswa = siswaList.find(s => s.id === trx.siswaId);
+            if (!siswa) {
+                showNotification("Data siswa untuk transaksi ini tidak ditemukan.", "error");
+                return;
+            }
+
+            document.getElementById('etab-id').value = trx.id;
+            document.getElementById('etab-old-nominal').value = Number(trx.nominal) || 0;
+            document.getElementById('etab-siswa').textContent = `${siswa.nama} — ${siswa.nisn || ''}`;
+            document.getElementById('etab-tanggal').value = trx.tanggal || new Date().toISOString().split('T')[0];
+            document.getElementById('etab-tipe').value = trx.tipe || 'SETOR';
+            document.getElementById('etab-nominal').value = Number(trx.nominal) || 0;
+            document.getElementById('etab-keterangan').value = trx.keterangan || '';
+
+            openModal('modal-edit-tabungan-trx');
+        }
+
+        function submitEditTabunganTrx(e) {
+            e.preventDefault();
+
+            const trxId = document.getElementById('etab-id').value;
+            const trx = tabunganTrx.find(t => t.id === trxId);
+            if (!trx) {
+                showNotification("Transaksi tidak ditemukan.", "error");
+                return;
+            }
+
+            const siswa = siswaList.find(s => s.id === trx.siswaId);
+            if (!siswa) return;
+
+            const oldType = trx.tipe;
+            const oldNominal = Number(trx.nominal) || 0;
+            const newType = document.getElementById('etab-tipe').value;
+            const newNominal = Number(document.getElementById('etab-nominal').value);
+            const newDate = document.getElementById('etab-tanggal').value;
+            const newKet = document.getElementById('etab-keterangan').value.trim();
+
+            if (!newNominal || newNominal <= 0) {
+                showNotification("Nominal harus lebih dari 0.", "error");
+                return;
+            }
+            if (!newDate) {
+                showNotification("Tanggal transaksi wajib diisi.", "error");
+                return;
+            }
+
+            // Balikkan dampak transaksi lama ke saldo siswa.
+            if (oldType === 'SETOR') {
+                siswa.saldoTabungan = (siswa.saldoTabungan || 0) - oldNominal;
+            } else {
+                siswa.saldoTabungan = (siswa.saldoTabungan || 0) + oldNominal;
+            }
+
+            // Terapkan transaksi baru.
+            if (newType === 'SETOR') {
+                siswa.saldoTabungan = (siswa.saldoTabungan || 0) + newNominal;
+            } else {
+                if ((siswa.saldoTabungan || 0) < newNominal) {
+                    // Rollback dampak lama jika transaksi baru tidak valid.
+                    if (oldType === 'SETOR') siswa.saldoTabungan += oldNominal;
+                    else siswa.saldoTabungan -= oldNominal;
+                    showNotification("Saldo tidak mencukupi untuk penarikan baru.", "error");
+                    return;
+                }
+                siswa.saldoTabungan -= newNominal;
+            }
+
+            trx.tipe = newType;
+            trx.sandi = newType === 'SETOR' ? '101-STR' : '102-DBT';
+            trx.nominal = newNominal;
+            trx.tanggal = newDate;
+            trx.keterangan = newKet || (newType === 'SETOR' ? 'Setor Tunai Tabungan' : 'Penarikan Tunai Mandiri');
+
+            // Sinkronkan transaksi kas yang dibuat bersamaan dengan transaksi tabungan.
+            const cash = transactions.find(t => t.refId === trx.id);
+            if (cash) {
+                cash.tgl = newDate;
+                cash.tanggal = newDate;
+                cash.jenis = newType === 'SETOR' ? 'MASUK' : 'KELUAR';
+                cash.kategori = newType === 'SETOR' ? 'Setoran Tabungan Siswa' : 'Penarikan Tabungan Siswa';
+                cash.nominal = newNominal;
+                cash.siswaId = trx.siswaId;
+                cash.keterangan = newKet || (newType === 'SETOR'
+                    ? `Setor Tabungan - ${siswa.nama}`
+                    : `Penarikan Tabungan - ${siswa.nama}`);
+            }
+
+            saveState();
+            renderAll();
+            closeModal('modal-edit-tabungan-trx');
+
+            // Jika Passbook sedang terbuka, refresh tampilannya.
+            if (!document.getElementById('modal-buku-tabungan')?.classList.contains('hidden')) {
+                onSelectBukuTabunganSiswa();
+            }
+
+            showNotification(`Transaksi ${trx.id} berhasil diperbarui. Saldo: ${formatRupiah(siswa.saldoTabungan || 0)}`, "success");
+        }
+
         function openBukuTabunganModal(siswaId = null) {
             const select = document.getElementById('btab-select-siswa');
             if (select && siswaId) {
@@ -3516,6 +3678,7 @@
                         <td class="p-2 text-right border-r border-slate-300 font-mono font-black text-slate-900">${formatRupiah(r.saldo)}</td>
                         <td class="p-2 text-center border-r border-slate-300 font-mono text-[10px]">TLR-01</td>
                         <td class="p-2 text-center no-print">
+                            <button onclick="openEditTabunganTrxModal('${r.id}')" class="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-bold text-[10px]">Edit</button>
                             <button onclick="openThermalSlip('TABUNGAN', '${r.id}')" class="px-2 py-0.5 bg-sky-100 hover:bg-sky-200 text-sky-800 rounded font-bold text-[10px]">Struk</button>
                         </td>
                     `;
