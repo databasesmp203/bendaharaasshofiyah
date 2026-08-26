@@ -2038,7 +2038,17 @@
             { id: "TRX-002", refId: "PAY-001", tgl: "2026-07-25", tanggal: "2026-07-25", jenis: "KELUAR", kategori: "Payroll Gaji & Tunjangan Pegawai", nominal: 6530000, metode: "Transfer Bank", keterangan: "Gaji Periode Juli 2026 - Ust. Eko Prasetyo, M.Pd" }
         ];
 
-        let settings = JSON.parse(localStorage.getItem('edufin_settings')) || defaultSettings;
+        let settings = JSON.parse(localStorage.getItem('edufin_settings')) || { ...defaultSettings };
+        // PIN aplikasi disimpan terpisah agar tidak pernah berubah akibat sinkronisasi Google Sheets.
+        const SAVED_APP_PIN = localStorage.getItem('edufin_app_pin');
+        if (SAVED_APP_PIN && /^\d{4,6}$/.test(SAVED_APP_PIN)) {
+            settings.appPin = SAVED_APP_PIN;
+        } else {
+            settings.appPin = (settings.appPin && /^\d{4,6}$/.test(String(settings.appPin)))
+                ? String(settings.appPin)
+                : "1234";
+            localStorage.setItem('edufin_app_pin', settings.appPin);
+        }
         let rapbsList = JSON.parse(localStorage.getItem('edufin_rapbs')) || defaultRAPBS;
         let siswaList = JSON.parse(localStorage.getItem('edufin_siswa')) || defaultSiswa;
         let guruList = JSON.parse(localStorage.getItem('edufin_guru')) || defaultGuru;
@@ -2292,7 +2302,19 @@
 
                 if (res.status === 'success' && res.data) {
                     const d = res.data;
-                    if (d.settings && d.settings.schoolName) settings = d.settings;
+                    if (d.settings && d.settings.schoolName) {
+                        // Google Sheets boleh memperbarui identitas/konfigurasi lain,
+                        // tetapi PIN lokal adalah sumber kebenaran agar PIN tidak berubah sendiri.
+                        const localPin = localStorage.getItem('edufin_app_pin');
+                        const cloudSettings = d.settings;
+                        settings = { ...settings, ...cloudSettings };
+                        if (localPin && /^\d{4,6}$/.test(localPin)) {
+                            settings.appPin = localPin;
+                        } else if (!settings.appPin || !/^\d{4,6}$/.test(String(settings.appPin))) {
+                            settings.appPin = "1234";
+                            localStorage.setItem('edufin_app_pin', settings.appPin);
+                        }
+                    }
                     if (Array.isArray(d.rapbsList) && d.rapbsList.length > 0) rapbsList = d.rapbsList;
                     if (Array.isArray(d.siswaList)) siswaList = d.siswaList;
                     if (Array.isArray(d.guruList)) guruList = d.guruList;
@@ -4078,6 +4100,9 @@
             settings.appPin = newPin;
             settings.pinEnabled = document.getElementById('set-pin-enabled').checked;
 
+            // PIN disimpan di storage khusus dan tidak boleh ditimpa data cloud.
+            localStorage.setItem('edufin_app_pin', newPin);
+
             saveState();
             loadSettingsToUI();
             renderAll();
@@ -4111,7 +4136,7 @@
             const pinInput = document.getElementById('pin-input-field');
             const input = pinInput ? pinInput.value : '';
             const errorMsg = document.getElementById('pin-error-msg');
-            const currentPin = settings.appPin || '1234';
+            const currentPin = settings.appPin || localStorage.getItem('edufin_app_pin') || '1234';
 
             if (input === currentPin) {
                 closeModal('app-pin-lock-overlay');
@@ -4198,7 +4223,9 @@
                 "Reset ke Seed Awal",
                 "Apakah Anda yakin ingin mengembalikan seluruh data ke sampel/seed bawaan awal aplikasi?",
                 function() {
-                    settings = defaultSettings;
+                    const preservedPin = localStorage.getItem('edufin_app_pin') || settings.appPin || "1234";
+                    settings = { ...defaultSettings, appPin: preservedPin };
+                    localStorage.setItem('edufin_app_pin', preservedPin);
                     rapbsList = defaultRAPBS;
                     siswaList = defaultSiswa;
                     guruList = defaultGuru;
