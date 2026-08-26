@@ -1889,7 +1889,7 @@
                     <i class="fa-solid fa-file-pdf mr-1.5"></i> Unduh PDF
                 </button>
                 <button id="btn-wa-share" onclick="shareToWhatsAppPDF()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center shadow-md transition-all active:scale-95">
-                    <i class="fa-brands fa-whatsapp mr-1.5 text-sm"></i> Kirim WA + PDF
+                    <i class="fa-brands fa-whatsapp mr-1.5 text-sm"></i> Kirim PDF ke WhatsApp
                 </button>
                 <button onclick="printContainer('printable-area')" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center shadow-md">
                     <i class="fa-solid fa-print mr-1.5"></i> Cetak Thermal
@@ -3224,7 +3224,28 @@
                             <span class="font-mono">${formatRupiah(pay.thp)}</span>
                         </div>
                     `;
-                    waMsg = `*SLIP GAJI PEGAWAI - ${settings.schoolName}*\n\nYth. ${g.nama}\nDetail Gaji Periode ${pay.periode}:\nGapok & Tunjangan: ${formatRupiah(pay.gapok + pay.tunjangan)}\nHonor Mengajar & Hadir: ${formatRupiah(pay.honorJamTotal + pay.honorHadirTotal)}\nPotongan: ${formatRupiah(pay.potongan)}\n*TOTAL THP (BERSIH): ${formatRupiah(pay.thp)}*`;
+                    // Pesan WhatsApp dibuat dari record payroll yang SAMA dengan slip di layar.
+                    // Jangan menggabungkan komponen gaji agar nilainya persis sama dengan slip.
+                    const waLines = [
+                        `*SLIP GAJI PEGAWAI DIGITAL - ${settings.schoolName}*`,
+                        ``,
+                        `ID Slip: ${pay.id}`,
+                        `Pegawai: ${g.nama}`,
+                        `Periode: ${pay.periode}`,
+                        ``,
+                        `Gaji Pokok + Tunj: ${formatRupiah(pay.gapok + pay.tunjangan)}`,
+                        `Honor Jam (${pay.jamMengajar} Jam): ${formatRupiah(pay.honorJamTotal || 0)}`,
+                        `Honor Hadir (${pay.hariHadir} Hari): ${formatRupiah(pay.honorHadirTotal || 0)}`
+                    ];
+                    if (Number(pay.honorKegiatan || 0) > 0) {
+                        waLines.push(`Honor Kegiatan: ${formatRupiah(pay.honorKegiatan)}`);
+                    }
+                    waLines.push(
+                        `Potongan / Kasbon: -${formatRupiah(pay.potongan || 0)}`,
+                        ``,
+                        `*THP (TAKE HOME PAY): ${formatRupiah(pay.thp || 0)}*`
+                    );
+                    waMsg = waLines.join('\\n');
                 }
             } else if (type === 'KAS' || type === 'REF') {
                 const trx = transactions.find(t => t.id === id || t.refId === id);
@@ -3273,22 +3294,133 @@
             window.print();
         }
 
-        function shareToWhatsAppPDF() {
+        async function shareToWhatsAppPDF() {
             const input = document.getElementById('slip-wa-phone-input');
-            let phone = input ? input.value.trim() : activeWAContext.phone;
-            if (!phone) {
-                showNotification("Masukkan nomor WhatsApp penerima!", "error");
+            const phone = input ? input.value.trim() : (activeWAContext?.phone || '');
+            const element = document.getElementById('printable-area');
+
+            if (!element) {
+                showNotification("Slip gaji tidak ditemukan!", "error");
                 return;
             }
 
-            phone = phone.replace(/[^0-9]/g, '');
-            if (phone.startsWith('0')) {
-                phone = '62' + phone.slice(1);
+            const btn = document.getElementById('btn-wa-share');
+            const oldText = btn ? btn.innerHTML : '';
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Membuat PDF...';
             }
 
-            const url = `https://wa.me/${phone}?text=${encodeURIComponent(activeWAContext.message)}`;
-            window.open(url, '_blank');
+            try {
+                // Ambil data payroll yang sedang dibuka.
+                const payroll = activeWAContext?.type === 'PAYROLL'
+                    ? payrollHistory.find(p => p.id === activeWAContext.id)
+                    : null;
+
+                const guru = payroll
+                    ? (guruList.find(g => g.id === payroll.guruId) || { nama: 'Pegawai' })
+                    : { nama: 'Pegawai' };
+
+                const safe = (v) => String(v || '')
+                    .replace(/[^a-zA-Z0-9_-]+/g, '_')
+                    .replace(/^_+|_+$/g, '');
+
+                const filename = payroll
+                    ? `Slip_Gaji_${safe(guru.nama)}_${safe(payroll.periode)}_${safe(payroll.id)}.pdf`
+                    : `Slip_${safe(activeWAContext?.type)}_${safe(activeWAContext?.id)}.pdf`;
+
+                const opt = {
+                    margin: 0.2,
+                    filename,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: {
+                        scale: 2,
+                        useCORS: true,
+                        backgroundColor: '#ffffff'
+                    },
+                    jsPDF: {
+                        unit: 'in',
+                        format: [3.5, 5],
+                        orientation: 'portrait'
+                    }
+                };
+
+                // Buat PDF asli (bukan gambar dan bukan teks WhatsApp).
+                const blob = await html2pdf()
+                    .set(opt)
+                    .from(element)
+                    .outputPdf('blob');
+
+                const file = new File([blob], filename, {
+                    type: 'application/pdf'
+                });
+
+                // PENTING:
+                // Jangan kirim "text" agar Share Sheet/WhatsApp hanya membawa PDF.
+                if (
+                    navigator.share &&
+                    (!navigator.canShare || navigator.canShare({ files: [file] }))
+                ) {
+                    await navigator.share({
+                        files: [file],
+                        title: `Slip Gaji ${guru.nama}`.trim()
+                    });
+
+                    showNotification(
+                        "PDF slip gaji siap dikirim. Pilih WhatsApp pada menu berbagi.",
+                        "success"
+                    );
+                    return;
+                }
+
+                // Browser desktop yang tidak mendukung berbagi file:
+                // simpan PDF asli. Jangan membuat link WhatsApp dengan pesan teks,
+                // karena itu tidak dapat melampirkan file PDF secara otomatis.
+                const downloadUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+
+                setTimeout(() => URL.revokeObjectURL(downloadUrl), 30000);
+
+                showNotification(
+                    "PDF sudah dibuat. Lampirkan PDF tersebut di WhatsApp. Browser ini tidak mendukung pengiriman file WhatsApp otomatis.",
+                    "warning"
+                );
+
+                // Jika nomor tersedia, buka chat WhatsApp TANPA pesan teks.
+                const normalizedPhone = String(phone || '').replace(/[^0-9]/g, '');
+                if (normalizedPhone) {
+                    const waPhone = normalizedPhone.startsWith('0')
+                        ? '62' + normalizedPhone.slice(1)
+                        : normalizedPhone;
+
+                    setTimeout(() => {
+                        window.open(`https://wa.me/${waPhone}`, '_blank');
+                    }, 700);
+                }
+
+            } catch (err) {
+                // Membatalkan Share Sheet bukan kesalahan aplikasi.
+                if (err && err.name !== 'AbortError') {
+                    console.error('Gagal membagikan PDF:', err);
+                    showNotification(
+                        "Gagal membuat/membagikan PDF: " + (err.message || err),
+                        "error"
+                    );
+                }
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = oldText;
+                }
+            }
         }
+
 
         function openBukuTabunganModal(siswaId = null) {
             const select = document.getElementById('btab-select-siswa');
