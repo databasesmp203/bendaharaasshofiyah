@@ -73,11 +73,16 @@
             body[data-print-target="printable-passbook-tagihan"] #printable-passbook-tagihan * {
                 visibility: visible !important;
             }
+            body[data-print-target="printable-id-card"] #printable-id-card,
+            body[data-print-target="printable-id-card"] #printable-id-card * {
+                visibility: visible !important;
+            }
             body[data-print-target="printable-area"] #printable-area,
             body[data-print-target="printable-buku-tabungan"] #printable-buku-tabungan,
             body[data-print-target="printable-buku-gaji"] #printable-buku-gaji,
             body[data-print-target="printable-kartu-spp"] #printable-kartu-spp,
-            body[data-print-target="printable-passbook-tagihan"] #printable-passbook-tagihan {
+            body[data-print-target="printable-passbook-tagihan"] #printable-passbook-tagihan,
+            body[data-print-target="printable-id-card"] #printable-id-card {
                 position: absolute;
                 left: 0;
                 top: 0;
@@ -111,6 +116,16 @@
         }
         .animate-shake {
             animation: shake 0.35s ease-in-out;
+        }
+        .id-card-print-side {
+            width: 85.6mm;
+            height: 54mm;
+            break-after: page;
+            page-break-after: always;
+        }
+        .id-card-print-side:last-child {
+            break-after: auto;
+            page-break-after: auto;
         }
     </style>
 </head>
@@ -506,7 +521,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
                 <div>
                     <h3 class="text-lg font-bold text-slate-900">Bank Sekolah - Tabungan Siswa</h3>
-                    <p class="text-xs text-slate-500">Layanan simpanan siswa, edit transaksi tabungan, autodebet SPP, & cetak buku tabungan passbook</p>
+                    <p class="text-xs text-slate-500">Layanan simpanan siswa, autodebet SPP, & cetak buku tabungan passbook</p>
                 </div>
                 <div class="flex items-center space-x-2">
                     <button onclick="openModal('modal-tabungan-setor')" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center transition-all">
@@ -533,7 +548,7 @@
                                 <th class="p-3.5">Kelas</th>
                                 <th class="p-3.5 text-right">Saldo Saat Ini</th>
                                 <th class="p-3.5 text-center">Status</th>
-                                <th class="p-3.5 text-right">Aksi Transaksi Tabungan</th>
+                                <th class="p-3.5 text-right">Aksi Passbook & Struk</th>
                             </tr>
                         </thead>
                         <tbody id="tabungan-table-body" class="divide-y divide-slate-100">
@@ -890,6 +905,100 @@
         </div>
     </div>
 
+    <!-- Modal: Kartu Pelajar / ATM Siswa -->
+    <div id="modal-id-card" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3 border-slate-100 no-print">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base"><i class="fa-solid fa-id-card mr-2 text-sky-600"></i>Kartu Pelajar / ATM Siswa</h3>
+                    <p class="text-[11px] text-slate-500 mt-0.5">Identitas siswa sekaligus kartu rekening tabungan sekolah.</p>
+                </div>
+                <button onclick="closeModal('modal-id-card')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <div id="printable-id-card" class="space-y-4">
+                <!-- Sisi depan -->
+                <div class="id-card-print-side rounded-2xl overflow-hidden text-white shadow-xl relative bg-gradient-to-br from-sky-950 via-blue-800 to-indigo-700 p-5">
+                <div class="absolute -right-9 -top-10 w-40 h-40 rounded-full bg-cyan-300/15"></div>
+                <div class="absolute -left-10 -bottom-12 w-44 h-44 rounded-full bg-indigo-300/15"></div>
+                <div class="relative h-full flex flex-col justify-between">
+                    <div class="flex justify-between items-start gap-3">
+                        <div class="flex items-center gap-2 min-w-0">
+                            <div class="w-9 h-9 bg-white rounded-lg p-1 shrink-0 flex items-center justify-center">
+                                <img id="idcard-school-logo" class="w-full h-full object-contain hidden" alt="Logo sekolah">
+                                <i id="idcard-logo-fallback" class="fa-solid fa-graduation-cap text-sky-800 text-lg"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p id="idcard-school-name" class="text-[9px] font-extrabold uppercase leading-tight truncate">SMP IT NU ASSHOFIYAH BALAD</p>
+                                <p class="text-[8px] text-cyan-100 tracking-wide">KARTU PELAJAR & ATM SISWA</p>
+                            </div>
+                        </div>
+                        <span class="text-[8px] font-bold border border-white/50 px-2 py-1 rounded-full tracking-wider">AKTIF</span>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <div id="idcard-initials" class="w-16 h-16 rounded-xl bg-white/15 border border-white/30 flex items-center justify-center text-xl font-black tracking-wider shrink-0">SS</div>
+                        <div class="min-w-0">
+                            <p id="idcard-student-name" class="text-sm font-extrabold uppercase leading-tight break-words">NAMA SISWA</p>
+                            <p class="text-[9px] text-cyan-100 mt-1">KELAS <strong id="idcard-student-class" class="text-white">-</strong> &nbsp;•&nbsp; NISN <strong id="idcard-student-nisn" class="text-white font-mono">-</strong></p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="w-10 h-7 rounded-md bg-gradient-to-br from-amber-200 via-yellow-500 to-amber-700 border border-amber-100/70 mb-2" aria-label="Chip kartu"></div>
+                        <p class="text-[8px] text-cyan-100 uppercase tracking-wider">Nomor Rekening Simpanan Pelajar</p>
+                        <p id="idcard-account-number" class="font-mono text-sm font-bold tracking-widest">REK-0000000000</p>
+                        <div class="flex justify-between items-end mt-1 text-[8px] text-cyan-100">
+                            <span>SALDO TABUNGAN</span>
+                            <strong id="idcard-balance" class="text-white text-[10px]">Rp 0</strong>
+                        </div>
+                    </div>
+                </div>
+                </div>
+
+                <!-- Sisi belakang -->
+                <div class="id-card-print-side id-card-back rounded-2xl overflow-hidden text-slate-800 shadow-xl relative bg-gradient-to-br from-slate-50 via-sky-50 to-indigo-100 p-5 border border-sky-200">
+                    <div class="absolute right-0 top-0 w-28 h-full bg-gradient-to-b from-sky-700 to-indigo-800 opacity-95"></div>
+                    <div class="relative h-full flex flex-col justify-between">
+                        <div>
+                            <div class="h-8 bg-slate-900 -mx-5 mb-3"></div>
+                            <div class="flex justify-between items-start gap-4">
+                                <div>
+                                    <p class="text-[8px] uppercase font-extrabold text-sky-800 tracking-wider">Kartu ini adalah milik sekolah</p>
+                                    <p class="text-[8px] text-slate-600 leading-relaxed mt-1 max-w-[210px]">Wajib dibawa saat kegiatan sekolah dan layanan tabungan. Jika ditemukan, harap kembalikan ke sekolah.</p>
+                                </div>
+                                <div class="w-12 h-12 bg-white rounded-lg p-1 border border-sky-200 shrink-0 flex items-center justify-center">
+                                    <img id="idcard-back-logo" class="w-full h-full object-contain hidden" alt="Logo sekolah">
+                                    <i id="idcard-back-logo-fallback" class="fa-solid fa-school text-sky-700"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pr-24">
+                            <div class="border-b border-slate-400 pb-1 text-[8px] text-slate-500">Tanda tangan pemegang kartu</div>
+                            <p id="idcard-back-holder" class="text-[10px] font-bold text-slate-800 mt-1">NAMA SISWA</p>
+                            <p class="text-[8px] text-slate-500 mt-2">ID SISWA / NISN</p>
+                            <p id="idcard-back-id" class="font-mono text-[10px] font-bold tracking-wide">0000000000</p>
+                        </div>
+
+                        <div class="pr-24 flex items-end justify-between">
+                            <div>
+                                <p class="text-[7px] text-slate-500">Verifikasi kartu</p>
+                                <p id="idcard-verification-code" class="font-mono text-[9px] font-bold tracking-wider">SIS-000000</p>
+                            </div>
+                            <i class="fa-solid fa-shield-halved text-sky-700 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap justify-between gap-2 no-print">
+                <button id="btn-download-idcard-pdf" onclick="downloadStudentIdCardPDF()" class="px-3 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold"><i class="fa-solid fa-file-pdf mr-1.5"></i>Unduh PDF (Depan & Belakang)</button>
+                <button onclick="printContainer('printable-id-card')" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold"><i class="fa-solid fa-print mr-1.5"></i>Cetak Kartu</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal 2: Bayar SPP Bulanan -->
     <div id="modal-pay-spp" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -928,64 +1037,6 @@
                 <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
                     <button type="button" onclick="closeModal('modal-pay-spp')" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold">Batal</button>
                     <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/20">Proses & Cetak Struk</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-
-    <!-- Modal: Edit Transaksi Tabungan -->
-    <div id="modal-edit-tabungan-trx" class="fixed inset-0 z-[60] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl">
-            <div class="flex justify-between items-center border-b pb-3 mb-4">
-                <h3 class="font-bold text-slate-900">
-                    <i class="fa-solid fa-pen-to-square text-amber-600 mr-2"></i>Edit Transaksi Tabungan
-                </h3>
-                <button type="button" onclick="closeModal('modal-edit-tabungan-trx')" class="text-slate-400 hover:text-slate-700">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            <form id="form-edit-tabungan-trx" onsubmit="submitEditTabunganTrx(event)" class="space-y-4">
-                <input type="hidden" id="etab-id">
-                <input type="hidden" id="etab-old-nominal">
-
-                <div class="bg-slate-50 rounded-xl p-3 text-xs">
-                    <div class="font-bold text-slate-700">Siswa</div>
-                    <div id="etab-siswa" class="font-black text-slate-900 mt-1">-</div>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal</label>
-                        <input id="etab-tanggal" type="date" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Transaksi</label>
-                        <select id="etab-tipe" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold">
-                            <option value="SETOR">SETOR</option>
-                            <option value="TARIK">TARIK</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Nominal</label>
-                    <input id="etab-nominal" type="number" min="1" step="1" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan</label>
-                    <textarea id="etab-keterangan" rows="3" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm"></textarea>
-                </div>
-
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeModal('modal-edit-tabungan-trx')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Batal</button>
-                    <button type="button" onclick="printEditedTabunganTrx()" class="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold">
-                        <i class="fa-solid fa-print mr-1"></i>Cetak Ulang Struk
-                    </button>
-                    <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold">
-                        <i class="fa-solid fa-floppy-disk mr-1"></i>Simpan Perubahan
-                    </button>
                 </div>
             </form>
         </div>
@@ -2117,7 +2168,7 @@
         let transactions = JSON.parse(localStorage.getItem('edufin_transactions')) || defaultTransactions;
         let tempLogoData = "";
         let cashChartInstance = null;
-        let activeWAContext = { phone: "", message: "", type: "", id: "" };
+        let activeWAContext = { phone: "", type: "", id: "" };
         let pendingConfirmAction = null;
         let selectedBtabRows = {};
         let selectedKsppRows = {};
@@ -2542,6 +2593,9 @@
                     ${monthCellsHtml}
                     <td class="p-3 text-right">
                         <div class="flex items-center justify-end space-x-1">
+                            <button onclick="openStudentIdCard('${s.id}')" title="Kartu Pelajar / ATM Siswa" class="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white rounded-lg font-bold text-xs flex items-center">
+                                <i class="fa-solid fa-credit-card mr-1"></i> ID/ATM
+                            </button>
                             <button onclick="openKartuSPPModal('${s.id}')" title="Kartu SPP Digital" class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg font-bold text-xs flex items-center">
                                 <i class="fa-solid fa-address-card mr-1 text-indigo-600"></i> Kartu SPP
                             </button>
@@ -2614,9 +2668,6 @@
                     <td class="p-3.5 text-right space-x-1">
                         <button onclick="openBukuTabunganModal('${s.id}')" class="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold text-xs shadow-sm">
                             <i class="fa-solid fa-book-bookmark mr-1"></i> Buku Passbook
-                        </button>
-                        <button onclick="openBukuTabunganModal('${s.id}')" title="Edit Transaksi Tabungan" class="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl font-bold text-xs border border-amber-200">
-                            <i class="fa-solid fa-pen-to-square mr-1"></i> Edit Transaksi
                         </button>
                     </td>
                 `;
@@ -3327,21 +3378,81 @@
             }
 
             phoneInput.value = waPhone;
-            activeWAContext = { phone: waPhone, message: waMsg, type: type, id: id };
+            // Konteks dipakai untuk mengenali slip aktif dan membentuk nama PDF.
+            // Pesan WhatsApp tidak disimpan atau dikirim.
+            activeWAContext = { phone: waPhone, type: type, id: id };
             openModal('modal-thermal-slip');
         }
 
-        function downloadSlipPDF() {
-            const element = document.getElementById('printable-area');
-            if (!element) return;
-            const opt = {
+        function sanitizeFileNamePart(value, fallback) {
+            const safeValue = String(value || '')
+                .replace(/[\\\\/:*?"<>|]+/g, '')
+                .replace(/\s+/g, '_')
+                .replace(/^_+|_+$/g, '');
+            return safeValue || fallback;
+        }
+
+        function getCurrentSlipPdfFileName() {
+            const ctx = activeWAContext || {};
+            if (ctx.type === 'PAYROLL' && ctx.id) {
+                const pay = payrollHistory.find(item => item.id === ctx.id);
+                if (pay) {
+                    const guru = guruList.find(item => item.id === pay.guruId);
+                    return `Slip_Gaji_${sanitizeFileNamePart(guru && guru.nama, 'Pegawai')}_${sanitizeFileNamePart(pay.periode, 'Periode')}_${sanitizeFileNamePart(pay.id, 'Slip')}.pdf`;
+                }
+            }
+            return `Slip_${sanitizeFileNamePart(ctx.id, 'Transaksi')}_${Date.now()}.pdf`;
+        }
+
+        function getSlipPdfOptions(fileName) {
+            return {
                 margin: 0.2,
-                filename: `Struk_Transaksi_${Date.now()}.pdf`,
+                filename: fileName,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'in', format: [3.5, 5], orientation: 'portrait' }
+                // Sumber PDF selalu elemen slip yang sedang terlihat di modal.
+                html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
+                // Tinggi cukup agar seluruh isi slip masuk, termasuk slip dengan honor kegiatan.
+                jsPDF: { unit: 'in', format: [3.5, 11], orientation: 'portrait' }
             };
-            html2pdf().set(opt).from(element).save();
+        }
+
+        async function createCurrentSlipPdfBlob() {
+            const element = document.getElementById('printable-area');
+            if (!element) throw new Error('Slip tidak ditemukan');
+            if (typeof html2pdf !== 'function') throw new Error('Pembuat PDF belum tersedia');
+
+            const fileName = getCurrentSlipPdfFileName();
+            const pdfBlob = await html2pdf().set(getSlipPdfOptions(fileName)).from(element).outputPdf('blob');
+            return { pdfBlob, fileName };
+        }
+
+        async function downloadSlipPDF() {
+            const button = document.getElementById('btn-download-pdf');
+            const originalHtml = button ? button.innerHTML : '';
+            try {
+                if (button) {
+                    button.disabled = true;
+                    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Membuat PDF...';
+                }
+                const { pdfBlob, fileName } = await createCurrentSlipPdfBlob();
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+                showNotification('PDF slip gaji berhasil diunduh.', 'success');
+            } catch (err) {
+                console.error('PDF download error:', err);
+                showNotification('Gagal membuat PDF slip gaji.', 'error');
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
+            }
         }
 
         function printContainer(containerId) {
@@ -3356,8 +3467,6 @@
         }
 
         async function shareToWhatsAppPDF() {
-            const input = document.getElementById('slip-wa-phone-input');
-            const phone = input ? input.value.trim() : (activeWAContext?.phone || '');
             const element = document.getElementById('printable-area');
 
             if (!element) {
@@ -3365,267 +3474,61 @@
                 return;
             }
 
-            const btn = document.getElementById('btn-wa-share');
-            const oldText = btn ? btn.innerHTML : '';
+            const ctx = activeWAContext || {};
+            let fileName = getCurrentSlipPdfFileName();
 
-            if (btn) {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Membuat PDF...';
+            if (ctx.type === 'PAYROLL' && ctx.id) {
+                const pay = payrollHistory.find(p => p.id === ctx.id);
+                if (pay) {
+                    const guru = guruList.find(g => g.id === pay.guruId);
+                    const nama = (guru?.nama || 'Pegawai')
+                        .replace(/[\\\/:*?"<>|]+/g, '')
+                        .replace(/\s+/g, '_');
+                    const periode = String(pay.periode || '')
+                        .replace(/[\\\/:*?"<>|]+/g, '')
+                        .replace(/\s+/g, '_');
+                    fileName = `Slip_Gaji_${nama}_${periode}_${pay.id}.pdf`;
+                }
             }
 
+            const opt = getSlipPdfOptions(fileName);
+
             try {
-                // Ambil data payroll yang sedang dibuka.
-                const payroll = activeWAContext?.type === 'PAYROLL'
-                    ? payrollHistory.find(p => p.id === activeWAContext.id)
-                    : null;
+                showNotification("Membuat PDF slip gaji...", "info");
 
-                const guru = payroll
-                    ? (guruList.find(g => g.id === payroll.guruId) || { nama: 'Pegawai' })
-                    : { nama: 'Pegawai' };
+                const pdfBlob = await html2pdf().set(opt).from(element).outputPdf('blob');
+                const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+                const shareData = { files: [pdfFile] };
 
-                const safe = (v) => String(v || '')
-                    .replace(/[^a-zA-Z0-9_-]+/g, '_')
-                    .replace(/^_+|_+$/g, '');
-
-                const filename = payroll
-                    ? `Slip_Gaji_${safe(guru.nama)}_${safe(payroll.periode)}_${safe(payroll.id)}.pdf`
-                    : `Slip_${safe(activeWAContext?.type)}_${safe(activeWAContext?.id)}.pdf`;
-
-                const opt = {
-                    margin: 0.2,
-                    filename,
-                    image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: {
-                        scale: 2,
-                        useCORS: true,
-                        backgroundColor: '#ffffff'
-                    },
-                    jsPDF: {
-                        unit: 'in',
-                        format: [3.5, 5],
-                        orientation: 'portrait'
-                    }
-                };
-
-                // Buat PDF asli (bukan gambar dan bukan teks WhatsApp).
-                const blob = await html2pdf()
-                    .set(opt)
-                    .from(element)
-                    .outputPdf('blob');
-
-                const file = new File([blob], filename, {
-                    type: 'application/pdf'
-                });
-
-                // PENTING:
-                // Jangan kirim "text" agar Share Sheet/WhatsApp hanya membawa PDF.
-                if (
-                    navigator.share &&
-                    (!navigator.canShare || navigator.canShare({ files: [file] }))
-                ) {
-                    await navigator.share({
-                        files: [file],
-                        title: `Slip Gaji ${guru.nama}`.trim()
-                    });
-
-                    showNotification(
-                        "PDF slip gaji siap dikirim. Pilih WhatsApp pada menu berbagi.",
-                        "success"
-                    );
+                // HANYA FILE PDF. Tidak ada teks, URL, judul, atau pesan WhatsApp.
+                if (navigator.share && (!navigator.canShare || navigator.canShare(shareData))) {
+                    await navigator.share(shareData);
+                    showNotification("PDF slip gaji siap dikirim.", "success");
                     return;
                 }
 
-                // Browser desktop yang tidak mendukung berbagi file:
-                // simpan PDF asli. Jangan membuat link WhatsApp dengan pesan teks,
-                // karena itu tidak dapat melampirkan file PDF secara otomatis.
-                const downloadUrl = URL.createObjectURL(blob);
+                // Fallback: download PDF saja.
+                const blobUrl = URL.createObjectURL(pdfBlob);
                 const a = document.createElement('a');
-                a.href = downloadUrl;
-                a.download = filename;
+                a.href = blobUrl;
+                a.download = fileName;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
-
-                setTimeout(() => URL.revokeObjectURL(downloadUrl), 30000);
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
 
                 showNotification(
-                    "PDF sudah dibuat. Lampirkan PDF tersebut di WhatsApp. Browser ini tidak mendukung pengiriman file WhatsApp otomatis.",
+                    "PDF sudah diunduh. Kirim file PDF tersebut melalui WhatsApp.",
                     "warning"
                 );
-
-                // Jika nomor tersedia, buka chat WhatsApp TANPA pesan teks.
-                const normalizedPhone = String(phone || '').replace(/[^0-9]/g, '');
-                if (normalizedPhone) {
-                    const waPhone = normalizedPhone.startsWith('0')
-                        ? '62' + normalizedPhone.slice(1)
-                        : normalizedPhone;
-
-                    setTimeout(() => {
-                        window.open(`https://wa.me/${waPhone}`, '_blank');
-                    }, 700);
-                }
-
             } catch (err) {
-                // Membatalkan Share Sheet bukan kesalahan aplikasi.
-                if (err && err.name !== 'AbortError') {
-                    console.error('Gagal membagikan PDF:', err);
-                    showNotification(
-                        "Gagal membuat/membagikan PDF: " + (err.message || err),
-                        "error"
-                    );
-                }
-            } finally {
-                if (btn) {
-                    btn.disabled = false;
-                    btn.innerHTML = oldText;
+                if (err && err.name === 'AbortError') {
+                    showNotification("Pengiriman PDF dibatalkan.", "info");
+                } else {
+                    console.error("PDF share error:", err);
+                    showNotification("Gagal membuat/membagikan PDF slip gaji.", "error");
                 }
             }
-        }
-
-
-
-        function openEditTabunganTrxModal(trxId) {
-            const trx = tabunganTrx.find(t => t.id === trxId);
-            if (!trx) {
-                showNotification("Transaksi tabungan tidak ditemukan.", "error");
-                return;
-            }
-
-            const siswa = siswaList.find(s => s.id === trx.siswaId);
-            if (!siswa) {
-                showNotification("Data siswa untuk transaksi ini tidak ditemukan.", "error");
-                return;
-            }
-
-            document.getElementById('etab-id').value = trx.id;
-            document.getElementById('etab-old-nominal').value = Number(trx.nominal) || 0;
-            document.getElementById('etab-siswa').textContent = `${siswa.nama} — ${siswa.nisn || ''}`;
-            document.getElementById('etab-tanggal').value = trx.tanggal || new Date().toISOString().split('T')[0];
-            document.getElementById('etab-tipe').value = trx.tipe || 'SETOR';
-            document.getElementById('etab-nominal').value = Number(trx.nominal) || 0;
-            document.getElementById('etab-keterangan').value = trx.keterangan || '';
-
-            openModal('modal-edit-tabungan-trx');
-        }
-
-
-        function printEditedTabunganTrx() {
-            const trxId = document.getElementById('etab-id')?.value;
-            const trx = tabunganTrx.find(t => t.id === trxId);
-
-            if (!trx) {
-                showNotification("Transaksi tidak ditemukan.", "error");
-                return;
-            }
-
-            const siswa = siswaList.find(s => s.id === trx.siswaId);
-            if (!siswa) {
-                showNotification("Data siswa tidak ditemukan.", "error");
-                return;
-            }
-
-            const edited = {
-                ...trx,
-                tanggal: document.getElementById('etab-tanggal').value || trx.tanggal,
-                tipe: document.getElementById('etab-tipe').value || trx.tipe,
-                nominal: Number(document.getElementById('etab-nominal').value) || trx.nominal,
-                keterangan: document.getElementById('etab-keterangan').value.trim() || trx.keterangan
-            };
-
-            // Cetak ulang menggunakan data form terbaru tanpa mengubah database.
-            const original = tabunganTrx.find(t => t.id === trxId);
-            const backup = { ...original };
-
-            Object.assign(original, edited);
-            try {
-                openThermalSlip('TABUNGAN', trxId);
-            } finally {
-                Object.assign(original, backup);
-            }
-
-            showNotification("Struk ulang dibuka dengan data transaksi terbaru.", "success");
-        }
-
-        function submitEditTabunganTrx(e) {
-            e.preventDefault();
-
-            const trxId = document.getElementById('etab-id').value;
-            const trx = tabunganTrx.find(t => t.id === trxId);
-            if (!trx) {
-                showNotification("Transaksi tidak ditemukan.", "error");
-                return;
-            }
-
-            const siswa = siswaList.find(s => s.id === trx.siswaId);
-            if (!siswa) return;
-
-            const oldType = trx.tipe;
-            const oldNominal = Number(trx.nominal) || 0;
-            const newType = document.getElementById('etab-tipe').value;
-            const newNominal = Number(document.getElementById('etab-nominal').value);
-            const newDate = document.getElementById('etab-tanggal').value;
-            const newKet = document.getElementById('etab-keterangan').value.trim();
-
-            if (!newNominal || newNominal <= 0) {
-                showNotification("Nominal harus lebih dari 0.", "error");
-                return;
-            }
-            if (!newDate) {
-                showNotification("Tanggal transaksi wajib diisi.", "error");
-                return;
-            }
-
-            // Balikkan dampak transaksi lama ke saldo siswa.
-            if (oldType === 'SETOR') {
-                siswa.saldoTabungan = (siswa.saldoTabungan || 0) - oldNominal;
-            } else {
-                siswa.saldoTabungan = (siswa.saldoTabungan || 0) + oldNominal;
-            }
-
-            // Terapkan transaksi baru.
-            if (newType === 'SETOR') {
-                siswa.saldoTabungan = (siswa.saldoTabungan || 0) + newNominal;
-            } else {
-                if ((siswa.saldoTabungan || 0) < newNominal) {
-                    // Rollback dampak lama jika transaksi baru tidak valid.
-                    if (oldType === 'SETOR') siswa.saldoTabungan += oldNominal;
-                    else siswa.saldoTabungan -= oldNominal;
-                    showNotification("Saldo tidak mencukupi untuk penarikan baru.", "error");
-                    return;
-                }
-                siswa.saldoTabungan -= newNominal;
-            }
-
-            trx.tipe = newType;
-            trx.sandi = newType === 'SETOR' ? '101-STR' : '102-DBT';
-            trx.nominal = newNominal;
-            trx.tanggal = newDate;
-            trx.keterangan = newKet || (newType === 'SETOR' ? 'Setor Tunai Tabungan' : 'Penarikan Tunai Mandiri');
-
-            // Sinkronkan transaksi kas yang dibuat bersamaan dengan transaksi tabungan.
-            const cash = transactions.find(t => t.refId === trx.id);
-            if (cash) {
-                cash.tgl = newDate;
-                cash.tanggal = newDate;
-                cash.jenis = newType === 'SETOR' ? 'MASUK' : 'KELUAR';
-                cash.kategori = newType === 'SETOR' ? 'Setoran Tabungan Siswa' : 'Penarikan Tabungan Siswa';
-                cash.nominal = newNominal;
-                cash.siswaId = trx.siswaId;
-                cash.keterangan = newKet || (newType === 'SETOR'
-                    ? `Setor Tabungan - ${siswa.nama}`
-                    : `Penarikan Tabungan - ${siswa.nama}`);
-            }
-
-            saveState();
-            renderAll();
-            closeModal('modal-edit-tabungan-trx');
-
-            // Jika Passbook sedang terbuka, refresh tampilannya.
-            if (!document.getElementById('modal-buku-tabungan')?.classList.contains('hidden')) {
-                onSelectBukuTabunganSiswa();
-            }
-
-            showNotification(`Transaksi ${trx.id} berhasil diperbarui. Saldo: ${formatRupiah(siswa.saldoTabungan || 0)}`, "success");
         }
 
         function openBukuTabunganModal(siswaId = null) {
@@ -3719,9 +3622,7 @@
                         <td class="p-2 text-right border-r border-slate-300 font-mono font-black text-slate-900">${formatRupiah(r.saldo)}</td>
                         <td class="p-2 text-center border-r border-slate-300 font-mono text-[10px]">TLR-01</td>
                         <td class="p-2 text-center no-print">
-                            <button onclick="openEditTabunganTrxModal('${r.id}')" class="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-bold text-[10px]">Edit</button>
                             <button onclick="openThermalSlip('TABUNGAN', '${r.id}')" class="px-2 py-0.5 bg-sky-100 hover:bg-sky-200 text-sky-800 rounded font-bold text-[10px]">Struk</button>
-                            <button onclick="openThermalSlip('TABUNGAN', '${r.id}')" class="px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded font-bold text-[10px]">Cetak Ulang</button>
                         </td>
                     `;
                 }
@@ -3967,6 +3868,134 @@
                 jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
             };
             html2pdf().set(opt).from(element).save();
+        }
+
+        function getStudentCardFileName(siswa) {
+            const nama = sanitizeFileNamePart(siswa && siswa.nama, 'Siswa');
+            const nisn = sanitizeFileNamePart(siswa && siswa.nisn, 'NISN');
+            return `Kartu_Pelajar_ATM_${nama}_${nisn}.pdf`;
+        }
+
+        function openStudentIdCard(siswaId) {
+            const siswa = siswaList.find(item => item.id === siswaId);
+            if (!siswa) {
+                showNotification('Data siswa untuk kartu tidak ditemukan.', 'error');
+                return;
+            }
+
+            const initials = String(siswa.nama || 'Siswa')
+                .trim()
+                .split(/\s+/)
+                .slice(0, 2)
+                .map(part => part.charAt(0).toUpperCase())
+                .join('') || 'SS';
+            const logo = document.getElementById('idcard-school-logo');
+            const logoFallback = document.getElementById('idcard-logo-fallback');
+            const backLogo = document.getElementById('idcard-back-logo');
+            const backLogoFallback = document.getElementById('idcard-back-logo-fallback');
+
+            document.getElementById('idcard-school-name').textContent = settings.schoolName || 'SEKOLAH';
+            document.getElementById('idcard-student-name').textContent = siswa.nama || '-';
+            document.getElementById('idcard-student-class').textContent = siswa.kelas || '-';
+            document.getElementById('idcard-student-nisn').textContent = siswa.nisn || '-';
+            document.getElementById('idcard-initials').textContent = initials;
+            document.getElementById('idcard-account-number').textContent = `REK-${siswa.nisn || siswa.id}`;
+            document.getElementById('idcard-balance').textContent = formatRupiah(siswa.saldoTabungan || 0);
+            document.getElementById('idcard-back-holder').textContent = siswa.nama || '-';
+            document.getElementById('idcard-back-id').textContent = siswa.nisn || siswa.id;
+            document.getElementById('idcard-verification-code').textContent = `${siswa.id}-${String(siswa.nisn || '').slice(-4)}`;
+
+            if (settings.schoolLogo) {
+                logo.src = settings.schoolLogo;
+                logo.classList.remove('hidden');
+                logoFallback.classList.add('hidden');
+                backLogo.src = settings.schoolLogo;
+                backLogo.classList.remove('hidden');
+                backLogoFallback.classList.add('hidden');
+            } else {
+                logo.removeAttribute('src');
+                logo.classList.add('hidden');
+                logoFallback.classList.remove('hidden');
+                backLogo.removeAttribute('src');
+                backLogo.classList.add('hidden');
+                backLogoFallback.classList.remove('hidden');
+            }
+            document.getElementById('modal-id-card').dataset.siswaId = siswa.id;
+            openModal('modal-id-card');
+        }
+
+        async function downloadStudentIdCardPDF() {
+            const card = document.getElementById('printable-id-card');
+            const siswaId = document.getElementById('modal-id-card').dataset.siswaId;
+            const siswa = siswaList.find(item => item.id === siswaId);
+            const button = document.getElementById('btn-download-idcard-pdf');
+            const originalHtml = button ? button.innerHTML : '';
+            if (!card || !siswa) {
+                showNotification('Buka kartu siswa terlebih dahulu.', 'error');
+                return;
+            }
+            if (typeof html2pdf !== 'function') {
+                showNotification('Pembuat PDF belum tersedia. Periksa koneksi internet lalu coba lagi.', 'error');
+                return;
+            }
+            try {
+                if (button) {
+                    button.disabled = true;
+                    button.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Menyiapkan PDF...';
+                }
+                // Tunggu font dan gambar logo selesai dirender agar hasil PDF sama dengan pratinjau kartu.
+                if (document.fonts && document.fonts.ready) await document.fonts.ready;
+                await Promise.all(Array.from(card.querySelectorAll('img')).map(image => {
+                    if (image.complete) return Promise.resolve();
+                    return new Promise(resolve => {
+                        image.addEventListener('load', resolve, { once: true });
+                        image.addEventListener('error', resolve, { once: true });
+                    });
+                }));
+                const front = card.querySelector('.id-card-print-side:not(.id-card-back)');
+                const back = card.querySelector('.id-card-back');
+                if (!front || !back) throw new Error('Desain kartu tidak lengkap');
+
+                const fileName = getStudentCardFileName(siswa);
+                const pdfOptions = {
+                    margin: 0,
+                    filename: fileName,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 3, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
+                    jsPDF: { unit: 'mm', format: [85.6, 54], orientation: 'landscape' }
+                };
+
+                // Render sisi depan sebagai halaman pertama. Elemen induk pratinjau tidak ikut dirender,
+                // sehingga ukuran PDF tidak terpengaruh lebar modal dan kartu tidak terpotong.
+                const frontWorker = html2pdf().set(pdfOptions).from(front).toPdf();
+                const pdf = await frontWorker.get('pdf');
+
+                // Render sisi belakang secara mandiri, lalu masukkan pas ke halaman kartu kedua.
+                const backWorker = html2pdf().set(pdfOptions).from(back).toCanvas();
+                const backCanvas = await backWorker.get('canvas');
+                pdf.addPage([85.6, 54], 'landscape');
+                pdf.addImage(backCanvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, 0, 85.6, 54, undefined, 'FAST');
+                const pdfBlob = pdf.output('blob');
+
+                if (!pdfBlob || !pdfBlob.size) throw new Error('PDF kosong');
+                const blobUrl = URL.createObjectURL(pdfBlob);
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+                showNotification('PDF kartu depan dan belakang berhasil diunduh.', 'success');
+            } catch (err) {
+                console.error('Student ID card PDF error:', err);
+                showNotification('Gagal membuat PDF kartu pelajar.', 'error');
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = originalHtml;
+                }
+            }
         }
 
         function openSiswaModal(siswaId = null) {
