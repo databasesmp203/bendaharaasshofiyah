@@ -209,33 +209,23 @@
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-    <!-- PIN Lock Overlay (Aktif Secara Default Saat Aplikasi Dibuka) -->
-    <div id="app-pin-lock-overlay" class="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-sm w-full text-center space-y-6 shadow-2xl relative overflow-hidden">
-            <div class="absolute -top-10 -left-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
-            <div class="absolute -bottom-10 -right-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
-            
-            <div class="relative">
-                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white mx-auto flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20 mb-3">
-                    <i class="fa-solid fa-lock" id="pin-lock-icon"></i>
-                </div>
-                <h2 class="text-lg font-black text-white" id="pin-lock-school-name">SMP IT NU Asshofiyah Balad</h2>
-                <p class="text-xs text-slate-400 mt-1">Sistem Informasi Keuangan Sekolah</p>
+    <!-- Login Pengguna: menggantikan PIN lock yang sebelumnya selalu muncul saat aplikasi dibuka -->
+    <div id="app-login-overlay" class="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-16 -left-16 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl"></div>
+            <div class="absolute -bottom-16 -right-16 w-40 h-40 bg-indigo-500/10 rounded-full blur-3xl"></div>
+            <div class="relative text-center">
+                <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white mx-auto flex items-center justify-center text-2xl shadow-lg shadow-emerald-500/20 mb-3"><i class="fa-solid fa-right-to-bracket"></i></div>
+                <h2 class="text-lg font-black text-white" id="login-school-name">SMP IT NU Asshofiyah Balad</h2>
+                <p class="text-xs text-slate-400 mt-1">Login Pengguna Sistem Keuangan Sekolah</p>
             </div>
-
-            <div class="space-y-3">
-                <p class="text-xs font-semibold text-slate-300">Masukkan PIN Keamanan untuk Akses</p>
-                <div class="flex justify-center my-4">
-                    <input type="password" maxlength="6" id="pin-input-field" onkeyup="handlePinInputKeyup(event)" class="w-48 text-center text-2xl font-mono tracking-[0.4em] px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-emerald-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30 font-bold" placeholder="••••">
-                </div>
-                <p id="pin-error-msg" class="text-xs font-bold text-rose-400 hidden"><i class="fa-solid fa-circle-exclamation mr-1"></i> PIN Salah! Silakan coba lagi.</p>
-                <p class="text-[11px] text-slate-500">PIN Default: <span class="font-mono font-bold text-slate-400">1234</span></p>
-            </div>
-
-            <button onclick="verifyPin()" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center space-x-2 active:scale-95">
-                <i class="fa-solid fa-key text-sm"></i>
-                <span>Buka Kunci Aplikasi</span>
-            </button>
+            <form id="app-login-form" onsubmit="submitUserLogin(event)" class="relative space-y-4 mt-6">
+                <div><label class="block text-xs font-bold text-slate-300 mb-1.5">Username</label><div class="relative"><i class="fa-solid fa-user absolute left-3 top-3 text-slate-500 text-xs"></i><input id="login-username" type="text" autocomplete="username" required class="w-full pl-9 pr-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" placeholder="Masukkan username"></div></div>
+                <div><label class="block text-xs font-bold text-slate-300 mb-1.5">Password</label><div class="relative"><i class="fa-solid fa-lock absolute left-3 top-3 text-slate-500 text-xs"></i><input id="login-password" type="password" autocomplete="current-password" required class="w-full pl-9 pr-10 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20" placeholder="Masukkan password"><button type="button" onclick="toggleLoginPassword()" class="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"><i id="login-password-icon" class="fa-solid fa-eye text-xs"></i></button></div></div>
+                <p id="login-error-msg" class="hidden text-xs font-bold text-rose-400 text-center"></p>
+                <button id="btn-user-login" type="submit" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl font-bold text-xs shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 active:scale-95"><i class="fa-solid fa-right-to-bracket"></i><span>Masuk ke Aplikasi</span></button>
+                <div class="pt-3 border-t border-slate-800 text-center"><p class="text-[10px] text-slate-500">Autentikasi pengguna dapat menggunakan Google Sheets melalui Apps Script.</p><p class="text-[10px] text-slate-600 mt-1">Akun demo lokal: <span class="font-mono">admin / admin123</span></p></div>
+            </form>
         </div>
     </div>
 
@@ -844,6 +834,28 @@
                     </div>
                 </div>
 
+                <!-- MANAJEMEN USER -->
+                <div class="pt-5 border-t border-slate-200">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4">
+                        <div>
+                            <h4 class="text-sm font-extrabold text-slate-900"><i class="fa-solid fa-users-gear text-indigo-600 mr-2"></i>Pengaturan Pengguna</h4>
+                            <p class="text-[11px] text-slate-500">Kelola akun login, password, nama pengguna, dan hak akses Admin / Bendahara / Guru.</p>
+                        </div>
+                        <button type="button" onclick="openUserModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm">
+                            <i class="fa-solid fa-user-plus mr-1.5"></i> Tambah User
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-50 border-b border-slate-200"><tr>
+                                <th class="p-3 font-bold text-slate-600">Username</th><th class="p-3 font-bold text-slate-600">Nama</th><th class="p-3 font-bold text-slate-600">Hak Akses</th><th class="p-3 text-right font-bold text-slate-600">Aksi</th>
+                            </tr></thead>
+                            <tbody id="user-settings-table-body"></tbody>
+                        </table>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-2"><i class="fa-solid fa-circle-info mr-1"></i>Akun tersimpan di browser ini. Jika Google Apps Script Anda mendukung USER_LIST/USER_SAVE/USER_DELETE, data dapat disinkronkan ke server.</p>
+                </div>
+
                 <div class="pt-4 border-t border-slate-200 flex flex-wrap justify-between items-center gap-4">
                     <button onclick="saveSettings()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/20">
                         <i class="fa-solid fa-floppy-disk mr-1.5"></i> Simpan Pengaturan
@@ -864,6 +876,24 @@
     </main>
 
     <!-- MODALS -->
+    <!-- Modal User -->
+    <div id="modal-user" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3 border-slate-100">
+                <h3 id="modal-user-title" class="font-bold text-slate-900 text-base">Tambah Pengguna</h3>
+                <button onclick="closeModal('modal-user')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="submitUserSettings(event)" class="space-y-3">
+                <input type="hidden" id="user-edit-index" value="-1">
+                <div><label class="block text-xs font-bold text-slate-700 mb-1">Username</label><input id="user-setting-username" required autocomplete="off" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs"></div>
+                <div><label class="block text-xs font-bold text-slate-700 mb-1">Nama Pengguna</label><input id="user-setting-name" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs"></div>
+                <div><label class="block text-xs font-bold text-slate-700 mb-1">Password</label><input id="user-setting-password" type="password" autocomplete="new-password" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs"><p class="text-[10px] text-slate-400 mt-1">Saat edit, kosongkan jika password tidak ingin diubah.</p></div>
+                <div><label class="block text-xs font-bold text-slate-700 mb-1">Hak Akses</label><select id="user-setting-role" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs"><option value="Admin">Admin</option><option value="Bendahara">Bendahara</option><option value="Guru">Guru</option></select></div>
+                <div class="pt-3 border-t border-slate-100 flex justify-end gap-2"><button type="button" onclick="closeModal('modal-user')" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold">Batal</button><button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold"><i class="fa-solid fa-floppy-disk mr-1"></i>Simpan User</button></div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal 1: Siswa Baru & Edit -->
     <div id="modal-siswa" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -892,6 +922,19 @@
                         <option value="IX-A">
                         <option value="IX-B">
                     </datalist>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Foto Siswa</label>
+                    <div class="flex items-center gap-3">
+                        <img id="siswa-photo-preview" src="" alt="Foto siswa" class="w-16 h-16 rounded-xl object-cover border border-slate-200 bg-slate-100 hidden">
+                        <div class="flex-1">
+                            <input type="file" id="siswa-photo" accept="image/jpeg,image/png,image/webp" onchange="previewSiswaPhoto(event)" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs">
+                            <div class="flex items-center gap-3 mt-1">
+                                <p class="text-[9px] text-slate-400">JPG/PNG/WebP. Foto diperkecil otomatis.</p>
+                                <button type="button" onclick="removeSiswaPhoto()" class="text-[9px] font-bold text-rose-600 hover:text-rose-700">Hapus foto</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">No. WhatsApp Orang Tua</label>
@@ -937,7 +980,10 @@
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <div id="idcard-initials" class="w-16 h-16 rounded-xl bg-white/15 border border-white/30 flex items-center justify-center text-xl font-black tracking-wider shrink-0">SS</div>
+                        <div class="w-16 h-16 rounded-xl bg-white/15 border border-white/30 overflow-hidden shrink-0 flex items-center justify-center">
+                            <img id="idcard-student-photo" class="w-full h-full object-cover hidden" alt="Foto siswa pada kartu">
+                            <span id="idcard-initials" class="text-xl font-black tracking-wider">SS</span>
+                        </div>
                         <div class="min-w-0">
                             <p id="idcard-student-name" class="text-sm font-extrabold uppercase leading-tight break-words">NAMA SISWA</p>
                             <p class="text-[9px] text-cyan-100 mt-1">KELAS <strong id="idcard-student-class" class="text-white">-</strong> &nbsp;•&nbsp; NISN <strong id="idcard-student-nisn" class="text-white font-mono">-</strong></p>
@@ -1115,7 +1161,7 @@
                         </div>
                         <div>
                             <span class="px-2 py-0.5 bg-amber-400 text-slate-950 font-black text-[9px] uppercase tracking-wider rounded">BANK MINI SEKOLAH</span>
-                            <h2 class="font-extrabold text-base tracking-tight uppercase" id="btab-nama-sekolah">SMP IT NU ASSHOFIYAH BALAD</h2>
+                            <div class="min-w-0"><h2 class="font-extrabold text-base tracking-tight uppercase" id="btab-nama-sekolah">SMP IT NU ASSHOFIYAH BALAD</h2></div>
                             <p class="text-[11px] text-sky-200" id="btab-alamat-sekolah">Balad, Cirebon, Jawa Barat</p>
                         </div>
                     </div>
@@ -1139,6 +1185,13 @@
                     <div>
                         <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">Kelas</span>
                         <strong id="btab-siswa-kelas" class="text-slate-900 text-sm font-bold block">-</strong>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <img id="btab-siswa-photo" src="" alt="Foto siswa" class="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-slate-100 hidden">
+                        <div>
+                            <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">Foto Siswa</span>
+                            <span id="btab-photo-status" class="text-[10px] text-slate-400">Belum ada foto</span>
+                        </div>
                     </div>
                     <div>
                         <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">Status Rekening</span>
@@ -1299,6 +1352,13 @@
                     <div>
                         <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">Kelas</span>
                         <strong id="kspp-siswa-kelas" class="text-slate-900 text-sm font-bold block">-</strong>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <img id="kspp-siswa-photo" src="" alt="Foto siswa" class="w-12 h-12 rounded-xl object-cover border border-slate-200 bg-slate-100 hidden">
+                        <div>
+                            <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">Foto Siswa</span>
+                            <span id="kspp-photo-status" class="text-[10px] text-slate-400">Belum ada foto</span>
+                        </div>
                     </div>
                     <div>
                         <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">Tarif SPP Bulanan</span>
@@ -1793,6 +1853,46 @@
         </div>
     </div>
 
+    <!-- Modal Edit Mutasi Tabungan -->
+    <div id="modal-edit-tabungan" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+            <div class="flex justify-between items-center border-b pb-3 border-slate-100">
+                <h3 class="font-bold text-slate-900 text-base" id="modal-edit-tabungan-title">Edit Mutasi Tabungan</h3>
+                <button onclick="closeModal('modal-edit-tabungan')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form id="form-edit-tabungan" onsubmit="submitEditTabungan(event)" class="space-y-3">
+                <input type="hidden" id="edit-tabungan-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Siswa / Rekening</label>
+                    <input type="text" id="edit-tabungan-siswa" readonly class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-xl text-xs font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Transaksi</label>
+                    <select id="edit-tabungan-tipe" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold">
+                        <option value="SETOR">SETOR</option>
+                        <option value="TARIK">TARIK</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal</label>
+                    <input type="date" id="edit-tabungan-tanggal" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nominal (Rp)</label>
+                    <input type="number" id="edit-tabungan-nominal" min="1" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Keterangan</label>
+                    <input type="text" id="edit-tabungan-keterangan" required class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs">
+                </div>
+                <div class="pt-3 flex justify-end space-x-2 border-t border-slate-100">
+                    <button type="button" onclick="closeModal('modal-edit-tabungan')" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-bold">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-md">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal 8: Tagihan Baru & Edit Non-SPP -->
     <div id="modal-tagihan-baru" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">
@@ -2095,7 +2195,7 @@
             schoolLogo: "",
             gasWebAppUrl: "",
             appPin: "1234",
-            pinEnabled: true
+            pinEnabled: false
         };
 
         const defaultRAPBS = [
@@ -2586,8 +2686,10 @@
                 tr.innerHTML = `
                     <td class="p-3 text-center text-slate-400">${idx + 1}</td>
                     <td class="p-3 font-semibold text-slate-900">
-                        <div>${s.nama}</div>
-                        <div class="text-[10px] text-slate-400 font-mono">NISN: ${s.nisn}</div>
+                        <div class="flex items-center gap-2">
+                            ${s.photo ? `<img src="${s.photo}" class="w-9 h-9 rounded-full object-cover border border-slate-200" alt="Foto ${s.nama}">` : `<div class="w-9 h-9 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center"><i class="fa-solid fa-user text-sm"></i></div>`}
+                            <div><div>${s.nama}</div><div class="text-[10px] text-slate-400 font-mono">NISN: ${s.nisn}</div></div>
+                        </div>
                     </td>
                     <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-slate-100 font-bold text-[10px] text-slate-700">${s.kelas}</span></td>
                     ${monthCellsHtml}
@@ -3531,6 +3633,102 @@
             }
         }
 
+        function recalculateAllTabunganBalances() {
+            siswaList.forEach(s => s.saldoTabungan = 0);
+            tabunganTrx.forEach(t => {
+                const siswa = siswaList.find(s => s.id === t.siswaId);
+                if (!siswa) return;
+                const nominal = Number(t.nominal) || 0;
+                siswa.saldoTabungan = (siswa.saldoTabungan || 0) + (t.tipe === 'SETOR' ? nominal : -nominal);
+            });
+            siswaList.forEach(s => {
+                if ((s.saldoTabungan || 0) < 0) s.saldoTabungan = 0;
+            });
+        }
+
+        function updateLinkedTabunganTransaction(tab) {
+            const trx = transactions.find(t => t.refId === tab.id);
+            if (!trx) return;
+            trx.tgl = tab.tanggal;
+            trx.tanggal = tab.tanggal;
+            trx.jenis = tab.tipe === 'SETOR' ? 'MASUK' : 'KELUAR';
+            trx.nominal = Number(tab.nominal) || 0;
+            trx.keterangan = tab.keterangan || (tab.tipe === 'SETOR' ? 'Setor Tunai Tabungan' : 'Penarikan Tunai Mandiri');
+            trx.kategori = tab.tipe === 'SETOR' ? 'Setoran Tabungan Siswa' : 'Penarikan Tabungan Siswa';
+        }
+
+        function openEditTabungan(id) {
+            const tab = tabunganTrx.find(t => t.id === id);
+            if (!tab) return;
+            if (String(tab.keterangan || '').toLowerCase().includes('autodebet spp')) {
+                showNotification('Mutasi autodebet SPP tidak dapat diedit dari menu tabungan. Edit pembayaran SPP dari menu SPP.', 'error');
+                return;
+            }
+            const siswa = siswaList.find(s => s.id === tab.siswaId);
+            document.getElementById('edit-tabungan-id').value = tab.id;
+            document.getElementById('edit-tabungan-siswa').value = siswa ? `${siswa.nama} (${siswa.kelas})` : '-';
+            document.getElementById('edit-tabungan-tipe').value = tab.tipe;
+            document.getElementById('edit-tabungan-tanggal').value = tab.tanggal || new Date().toISOString().split('T')[0];
+            document.getElementById('edit-tabungan-nominal').value = Number(tab.nominal) || 0;
+            document.getElementById('edit-tabungan-keterangan').value = tab.keterangan || '';
+            document.getElementById('modal-edit-tabungan-title').textContent = `Edit Mutasi ${tab.tipe}`;
+            openModal('modal-edit-tabungan');
+        }
+
+        function submitEditTabungan(e) {
+            e.preventDefault();
+            const id = document.getElementById('edit-tabungan-id').value;
+            const tab = tabunganTrx.find(t => t.id === id);
+            if (!tab) return;
+            if (String(tab.keterangan || '').toLowerCase().includes('autodebet spp')) {
+                showNotification('Mutasi autodebet SPP tidak dapat diedit dari menu tabungan.', 'error');
+                return;
+            }
+            const tipe = document.getElementById('edit-tabungan-tipe').value;
+            const nominal = Number(document.getElementById('edit-tabungan-nominal').value);
+            const tanggal = document.getElementById('edit-tabungan-tanggal').value;
+            const keterangan = document.getElementById('edit-tabungan-keterangan').value.trim();
+            if (!nominal || nominal <= 0 || !tanggal) {
+                showNotification('Tanggal dan nominal wajib diisi dengan benar.', 'error');
+                return;
+            }
+            tab.tipe = tipe;
+            tab.sandi = tipe === 'SETOR' ? '101-STR' : '102-DBT';
+            tab.nominal = nominal;
+            tab.tanggal = tanggal;
+            tab.keterangan = keterangan || (tipe === 'SETOR' ? 'Setor Tunai Tabungan' : 'Penarikan Tunai Mandiri');
+            recalculateAllTabunganBalances();
+            updateLinkedTabunganTransaction(tab);
+            saveState();
+            renderAll();
+            onSelectBukuTabunganSiswa();
+            closeModal('modal-edit-tabungan');
+            showNotification(`Mutasi ${id} berhasil diperbarui.`, 'success');
+        }
+
+        function deleteTabungan(id) {
+            const tab = tabunganTrx.find(t => t.id === id);
+            if (!tab) return;
+            if (String(tab.keterangan || '').toLowerCase().includes('autodebet spp')) {
+                showNotification('Mutasi autodebet SPP tidak dapat dihapus dari menu tabungan. Edit pembayaran SPP dari menu SPP.', 'error');
+                return;
+            }
+            const siswa = siswaList.find(s => s.id === tab.siswaId);
+            showConfirmModal(
+                'Hapus Mutasi Tabungan',
+                `Hapus mutasi ${tab.id} sebesar ${formatRupiah(tab.nominal)} atas nama ${siswa ? siswa.nama : 'siswa'}? Saldo dan transaksi kas terkait akan dihitung ulang.`,
+                function() {
+                    tabunganTrx = tabunganTrx.filter(t => t.id !== id);
+                    transactions = transactions.filter(t => t.refId !== id);
+                    recalculateAllTabunganBalances();
+                    saveState();
+                    renderAll();
+                    onSelectBukuTabunganSiswa();
+                    showNotification(`Mutasi ${id} berhasil dihapus.`, 'success');
+                }
+            );
+        }
+
         function openBukuTabunganModal(siswaId = null) {
             const select = document.getElementById('btab-select-siswa');
             if (select && siswaId) {
@@ -3551,6 +3749,9 @@
             document.getElementById('btab-siswa-nama').textContent = siswa.nama;
             document.getElementById('btab-siswa-nisn').textContent = siswa.nisn;
             document.getElementById('btab-siswa-kelas').textContent = siswa.kelas;
+            const btabPhoto = document.getElementById('btab-siswa-photo');
+            const btabPhotoStatus = document.getElementById('btab-photo-status');
+            if (btabPhoto) { if (siswa.photo) { btabPhoto.src = siswa.photo; btabPhoto.classList.remove('hidden'); if (btabPhotoStatus) btabPhotoStatus.textContent = 'Foto tersedia'; } else { btabPhoto.removeAttribute('src'); btabPhoto.classList.add('hidden'); if (btabPhotoStatus) btabPhotoStatus.textContent = 'Belum ada foto'; } }
             document.getElementById('btab-norek').textContent = `NO REK: REK-${siswa.nisn}`;
 
             const tbody = document.getElementById('btab-table-body');
@@ -3623,6 +3824,8 @@
                         <td class="p-2 text-center border-r border-slate-300 font-mono text-[10px]">TLR-01</td>
                         <td class="p-2 text-center no-print">
                             <button onclick="openThermalSlip('TABUNGAN', '${r.id}')" class="px-2 py-0.5 bg-sky-100 hover:bg-sky-200 text-sky-800 rounded font-bold text-[10px]">Struk</button>
+                            <button onclick="openEditTabungan('${r.id}')" class="px-2 py-0.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded font-bold text-[10px]">Edit</button>
+                            <button onclick="deleteTabungan('${r.id}')" class="px-2 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded font-bold text-[10px]">Hapus</button>
                         </td>
                     `;
                 }
@@ -3667,6 +3870,9 @@
             document.getElementById('kspp-siswa-nama').textContent = siswa.nama;
             document.getElementById('kspp-siswa-nisn').textContent = siswa.nisn;
             document.getElementById('kspp-siswa-kelas').textContent = siswa.kelas;
+            const ksppPhoto = document.getElementById('kspp-siswa-photo');
+            const ksppPhotoStatus = document.getElementById('kspp-photo-status');
+            if (ksppPhoto) { if (siswa.photo) { ksppPhoto.src = siswa.photo; ksppPhoto.classList.remove('hidden'); if (ksppPhotoStatus) ksppPhotoStatus.textContent = 'Foto tersedia'; } else { ksppPhoto.removeAttribute('src'); ksppPhoto.classList.add('hidden'); if (ksppPhotoStatus) ksppPhotoStatus.textContent = 'Belum ada foto'; } }
             document.getElementById('kspp-spp-rate').textContent = formatRupiah(settings.standardSPP || 250000);
             document.getElementById('kspp-nokartu').textContent = `NO KARTU: SPP-${siswa.nisn}`;
 
@@ -3899,6 +4105,11 @@
             document.getElementById('idcard-student-class').textContent = siswa.kelas || '-';
             document.getElementById('idcard-student-nisn').textContent = siswa.nisn || '-';
             document.getElementById('idcard-initials').textContent = initials;
+            const studentPhoto = document.getElementById('idcard-student-photo');
+            if (studentPhoto) {
+                if (siswa.photo) { studentPhoto.src = siswa.photo; studentPhoto.classList.remove('hidden'); document.getElementById('idcard-initials').classList.add('hidden'); }
+                else { studentPhoto.removeAttribute('src'); studentPhoto.classList.add('hidden'); document.getElementById('idcard-initials').classList.remove('hidden'); }
+            }
             document.getElementById('idcard-account-number').textContent = `REK-${siswa.nisn || siswa.id}`;
             document.getElementById('idcard-balance').textContent = formatRupiah(siswa.saldoTabungan || 0);
             document.getElementById('idcard-back-holder').textContent = siswa.nama || '-';
@@ -3998,8 +4209,55 @@
             }
         }
 
+        function removeSiswaPhoto() {
+            const input = document.getElementById('siswa-photo');
+            const preview = document.getElementById('siswa-photo-preview');
+            if (input) input.value = '';
+            if (preview) {
+                preview.src = '';
+                preview.classList.add('hidden');
+                preview.dataset.removed = '1';
+            }
+        }
+
+        function previewSiswaPhoto(event) {
+            const file = event.target.files?.[0];
+            const preview = document.getElementById('siswa-photo-preview');
+            if (!file || !preview) return;
+            if (!file.type.startsWith('image/')) { showNotification('File harus berupa gambar.', 'error'); event.target.value=''; return; }
+            const reader = new FileReader();
+            reader.onload = e => { preview.src = e.target.result; preview.classList.remove('hidden'); preview.dataset.removed = '0'; };
+            reader.readAsDataURL(file);
+        }
+
+        function compressSiswaPhoto(file, maxSize = 500, quality = 0.78) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(img.width * scale));
+                        canvas.height = Math.max(1, Math.round(img.height * scale));
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = reject;
+                    img.src = reader.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
         function openSiswaModal(siswaId = null) {
             const titleEl = document.getElementById('modal-siswa-title');
+            const photoInput = document.getElementById('siswa-photo');
+            const photoPreview = document.getElementById('siswa-photo-preview');
+            if (photoInput) photoInput.value = '';
+            if (photoPreview) photoPreview.dataset.removed = '0';
             if (siswaId) {
                 const s = siswaList.find(item => item.id === siswaId);
                 if (!s) return;
@@ -4008,39 +4266,46 @@
                 document.getElementById('siswa-nama').value = s.nama;
                 document.getElementById('siswa-kelas').value = s.kelas;
                 document.getElementById('siswa-wa').value = s.wa || '';
+                if (photoPreview) {
+                    if (s.photo) { photoPreview.src = s.photo; photoPreview.classList.remove('hidden'); }
+                    else { photoPreview.src=''; photoPreview.classList.add('hidden'); }
+                    photoPreview.dataset.removed = '0';
+                }
                 if (titleEl) titleEl.textContent = 'Edit Data Siswa';
             } else {
                 document.getElementById('form-siswa').reset();
                 document.getElementById('siswa-id').value = '';
+                if (photoPreview) { photoPreview.src=''; photoPreview.classList.add('hidden'); photoPreview.dataset.removed = '0'; }
                 if (titleEl) titleEl.textContent = 'Pendaftaran Siswa Baru';
             }
             openModal('modal-siswa');
         }
 
-        function submitSiswa(e) {
+        async function submitSiswa(e) {
             e.preventDefault();
             const id = document.getElementById('siswa-id').value;
             const nisn = document.getElementById('siswa-nisn').value.trim();
             const nama = document.getElementById('siswa-nama').value.trim();
             const kelas = document.getElementById('siswa-kelas').value.trim();
             const wa = document.getElementById('siswa-wa').value.trim();
+            const photoInput = document.getElementById('siswa-photo');
+            const photoFile = photoInput?.files?.[0];
+            const photoPreview = document.getElementById('siswa-photo-preview');
+            let photo = id ? (siswaList.find(s => s.id === id)?.photo || '') : '';
+            if (photoPreview?.dataset.removed === '1') photo = '';
+            if (photoFile) {
+                try { photo = await compressSiswaPhoto(photoFile); }
+                catch(err) { showNotification('Foto gagal diproses.', 'error'); return; }
+            }
 
             if (id) {
                 const idx = siswaList.findIndex(s => s.id === id);
-                if (idx !== -1) {
-                    siswaList[idx] = { ...siswaList[idx], nisn, nama, kelas, wa };
-                }
-                showNotification(`Data siswa ${nama} berhasil diperbarui!`, "success");
+                if (idx !== -1) siswaList[idx] = { ...siswaList[idx], nisn, nama, kelas, wa, photo };
+                showNotification(`Data siswa ${nama} berhasil diperbarui!`, 'success');
             } else {
-                const newSiswa = {
-                    id: 'SIS-' + String(Date.now()).slice(-4),
-                    nisn, nama, kelas, wa,
-                    saldoTabungan: 0
-                };
-                siswaList.push(newSiswa);
-                showNotification(`Siswa baru ${nama} berhasil ditambahkan!`, "success");
+                siswaList.push({ id: 'SIS-' + String(Date.now()).slice(-4), nisn, nama, kelas, wa, photo, saldoTabungan: 0 });
+                showNotification(`Siswa baru ${nama} berhasil ditambahkan!`, 'success');
             }
-
             saveState();
             renderAll();
             closeModal('modal-siswa');
@@ -4438,7 +4703,7 @@
             updateLogoDisplays();
 
             document.getElementById('school-name-display').textContent = settings.schoolName;
-            document.getElementById('pin-lock-school-name').textContent = settings.schoolName;
+            document.getElementById('login-school-name').textContent = settings.schoolName;
             document.getElementById('slip-school-name').textContent = settings.schoolName;
             document.getElementById('slip-school-address').textContent = settings.schoolAddress;
             document.getElementById('btab-nama-sekolah').textContent = settings.schoolName;
@@ -4462,15 +4727,13 @@
             settings.schoolLogo = tempLogoData;
 
             const newPin = document.getElementById('set-app-pin').value.trim();
-            if (newPin.length < 4) {
-                showNotification("PIN aplikasi minimal 4 digit angka!", "error");
+            if (newPin && !/^\d{4,6}$/.test(newPin)) {
+                showNotification("PIN aplikasi harus 4-6 digit angka.", "error");
                 return;
             }
-            settings.appPin = newPin;
-            settings.pinEnabled = document.getElementById('set-pin-enabled').checked;
-
-            // PIN disimpan di storage khusus dan tidak boleh ditimpa data cloud.
-            localStorage.setItem('edufin_app_pin', newPin);
+            settings.appPin = newPin || settings.appPin || '1234';
+            settings.pinEnabled = false;
+            localStorage.setItem('edufin_app_pin', settings.appPin);
 
             saveState();
             loadSettingsToUI();
@@ -4487,46 +4750,91 @@
             }
         }
 
-        function lockApp() {
-            const overlay = document.getElementById('app-pin-lock-overlay');
-            if (overlay) {
-                const pinInput = document.getElementById('pin-input-field');
-                if (pinInput) pinInput.value = '';
-                const err = document.getElementById('pin-error-msg');
-                if (err) err.classList.add('hidden');
-                overlay.classList.remove('hidden');
-                setTimeout(() => {
-                    if (pinInput) pinInput.focus();
-                }, 100);
-            }
+        let currentUser = null;
+        const DEFAULT_USERS = [
+            { username: 'admin', password: 'admin123', nama: 'Administrator', role: 'Admin' },
+            { username: 'bendahara', password: 'bendahara123', nama: 'Bendahara', role: 'Bendahara' },
+            { username: 'guru', password: 'guru123', nama: 'Guru', role: 'Guru' }
+        ];
+        let LOCAL_USERS = loadLocalUsers();
+        function loadLocalUsers(){ try { const raw=localStorage.getItem('edufin_users'); const arr=raw?JSON.parse(raw):null; return Array.isArray(arr)&&arr.length ? arr : DEFAULT_USERS.map(u=>({...u})); } catch(e){ return DEFAULT_USERS.map(u=>({...u})); } }
+        function saveLocalUsers(){ localStorage.setItem('edufin_users', JSON.stringify(LOCAL_USERS)); }
+        function renderUserSettings(){
+            const body=document.getElementById('user-settings-table-body'); if(!body) return; body.innerHTML='';
+            LOCAL_USERS.forEach((u,i)=>{ const tr=document.createElement('tr'); tr.className='border-b border-slate-100 hover:bg-slate-50'; const roleClass=u.role==='Admin'?'bg-indigo-100 text-indigo-700':u.role==='Bendahara'?'bg-amber-100 text-amber-700':'bg-emerald-100 text-emerald-700'; tr.innerHTML=`<td class=\"p-3 font-mono font-bold text-slate-800\">${escapeHtml(u.username)}</td><td class=\"p-3 font-semibold\">${escapeHtml(u.nama)}</td><td class=\"p-3\"><span class=\"px-2 py-1 rounded-full text-[10px] font-bold ${roleClass}\">${escapeHtml(u.role)}</span></td><td class=\"p-3 text-right\"><button type=\"button\" onclick=\"openUserModal(${i})\" class=\"px-2 py-1 bg-amber-50 text-amber-700 rounded-lg mr-1\"><i class=\"fa-solid fa-pen\"></i></button><button type=\"button\" onclick=\"deleteUserSettings(${i})\" class=\"px-2 py-1 bg-rose-50 text-rose-700 rounded-lg\"><i class=\"fa-solid fa-trash\"></i></button></td>`; body.appendChild(tr); });
         }
+        function escapeHtml(v){ return String(v??'').replace(/[&<>'\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c])); }
+        function openUserModal(index=-1){ const title=document.getElementById('modal-user-title'); document.getElementById('user-edit-index').value=index; if(index>=0&&LOCAL_USERS[index]){ const u=LOCAL_USERS[index]; title.textContent='Edit Pengguna'; document.getElementById('user-setting-username').value=u.username; document.getElementById('user-setting-name').value=u.nama; document.getElementById('user-setting-password').value=''; document.getElementById('user-setting-role').value=u.role||'Guru'; } else { title.textContent='Tambah Pengguna'; document.getElementById('user-setting-username').value=''; document.getElementById('user-setting-name').value=''; document.getElementById('user-setting-password').value=''; document.getElementById('user-setting-role').value='Guru'; } openModal('modal-user'); }
+        function submitUserSettings(e){ e.preventDefault(); const idx=Number(document.getElementById('user-edit-index').value); const username=document.getElementById('user-setting-username').value.trim(); const nama=document.getElementById('user-setting-name').value.trim(); const password=document.getElementById('user-setting-password').value; const role=document.getElementById('user-setting-role').value; if(!username||!nama) return; const dup=LOCAL_USERS.some((u,i)=>i!==idx&&u.username.toLowerCase()===username.toLowerCase()); if(dup){showNotification('Username sudah digunakan.','error');return;} if(idx>=0){ LOCAL_USERS[idx]={...LOCAL_USERS[idx],username,nama,role}; if(password) LOCAL_USERS[idx].password=password; showNotification('Data pengguna berhasil diperbarui.','success'); } else { if(!password){showNotification('Password wajib diisi untuk user baru.','error');return;} LOCAL_USERS.push({username,nama,password,role}); showNotification('Pengguna baru berhasil ditambahkan.','success'); } saveLocalUsers(); renderUserSettings(); closeModal('modal-user'); }
+        function deleteUserSettings(index){ const u=LOCAL_USERS[index]; if(!u) return; if(LOCAL_USERS.length<=1){showNotification('Minimal harus ada satu pengguna.','error');return;} if(currentUser&&u.username.toLowerCase()===currentUser.username.toLowerCase()){showNotification('User yang sedang login tidak dapat dihapus.','error');return;} if(!confirm(`Hapus pengguna ${u.nama} (${u.username})?`)) return; LOCAL_USERS.splice(index,1); saveLocalUsers(); renderUserSettings(); showNotification('Pengguna berhasil dihapus.','success'); }
 
-        function verifyPin() {
-            const pinInput = document.getElementById('pin-input-field');
-            const input = pinInput ? pinInput.value : '';
-            const errorMsg = document.getElementById('pin-error-msg');
-            const currentPin = settings.appPin || localStorage.getItem('edufin_app_pin') || '1234';
-
-            if (input === currentPin) {
-                closeModal('app-pin-lock-overlay');
-                showNotification("Akses aplikasi berhasil dibuka!", "success");
-            } else {
-                if (errorMsg) errorMsg.classList.remove('hidden');
-                if (pinInput) {
-                    pinInput.value = '';
-                    pinInput.classList.add('animate-shake', 'border-rose-500');
-                    setTimeout(() => {
-                        pinInput.classList.remove('animate-shake', 'border-rose-500');
-                    }, 400);
-                    pinInput.focus();
+        function showLoginOverlay(message = '') {
+            const overlay = document.getElementById('app-login-overlay');
+            if (!overlay) return;
+            overlay.classList.remove('hidden');
+            const msg = document.getElementById('login-error-msg');
+            if (msg) { msg.textContent = message; msg.classList.toggle('hidden', !message); }
+            setTimeout(() => document.getElementById('login-username')?.focus(), 100);
+        }
+        function hideLoginOverlay() { document.getElementById('app-login-overlay')?.classList.add('hidden'); }
+        function toggleLoginPassword() {
+            const input=document.getElementById('login-password'), icon=document.getElementById('login-password-icon');
+            if (!input) return; input.type=input.type==='password'?'text':'password';
+            if(icon) icon.className=input.type==='password'?'fa-solid fa-eye text-xs':'fa-solid fa-eye-slash text-xs';
+        }
+        async function submitUserLogin(event) {
+            event.preventDefault();
+            const username=document.getElementById('login-username')?.value.trim(), password=document.getElementById('login-password')?.value||'';
+            const btn=document.getElementById('btn-user-login'), err=document.getElementById('login-error-msg');
+            if(!username||!password) return;
+            if(btn){btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i><span>Memeriksa...</span>';}
+            if(err) err.classList.add('hidden');
+            let authenticated=null;
+            try{
+                const activeUrl=getActiveGASUrl();
+                if(activeUrl){
+                    const response=await fetch(activeUrl,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'LOGIN_USER',payload:{username,password}})});
+                    if(response.ok){
+                        const result=JSON.parse(await response.text());
+                        if(result.status==='success'&&result.user) authenticated=result.user;
+                    }
                 }
+            }catch(e){ console.warn('LOGIN_USER server tidak tersedia:',e.message); }
+            if(!authenticated){
+                const local=LOCAL_USERS.find(u=>u.username.toLowerCase()===username.toLowerCase()&&u.password===password);
+                if(local) authenticated={...local};
             }
+            if(!authenticated){
+                if(err){err.textContent='Username atau password salah.';err.classList.remove('hidden');}
+                if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-right-to-bracket"></i><span>Masuk ke Aplikasi</span>';}
+                return;
+            }
+            currentUser={username:authenticated.username||username,nama:authenticated.nama||authenticated.name||username,role:authenticated.role||authenticated.hakAkses||'Guru'};
+            sessionStorage.setItem('edufin_current_user',JSON.stringify(currentUser));
+            hideLoginOverlay(); applyUserAccess(); updateLoggedInUserBadge();
+            showNotification(`Selamat datang, ${currentUser.nama}!`,'success');
+            if(btn){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-right-to-bracket"></i><span>Masuk ke Aplikasi</span>';}
         }
-
-        function handlePinInputKeyup(e) {
-            if (e.key === 'Enter') {
-                verifyPin();
-            }
+        function restoreUserSession(){
+            try{const raw=sessionStorage.getItem('edufin_current_user');if(raw){const user=JSON.parse(raw);if(user&&user.username){currentUser=user;hideLoginOverlay();applyUserAccess();updateLoggedInUserBadge();return true;}}}catch(e){sessionStorage.removeItem('edufin_current_user');}
+            showLoginOverlay(); return false;
+        }
+        function logoutUser(){currentUser=null;sessionStorage.removeItem('edufin_current_user');showLoginOverlay();}
+        function lockApp(){logoutUser();}
+        function verifyPin(){showLoginOverlay('Silakan gunakan username dan password untuk masuk.');}
+        function handlePinInputKeyup(e){if(e.key==='Enter')verifyPin();}
+        function updateLoggedInUserBadge(){
+            let badge=document.getElementById('current-user-badge');
+            const host=document.querySelector('header .max-w-7xl > div');
+            if(!badge&&host){badge=document.createElement('div');badge.id='current-user-badge';badge.className='hidden lg:flex items-center gap-2 px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-[10px]';host.querySelector('div:last-child')?.prepend(badge);}
+            if(badge&&currentUser) badge.innerHTML=`<i class="fa-solid fa-user-shield text-emerald-400"></i><span class="text-slate-200 font-bold">${currentUser.nama}</span><span class="text-slate-500">(${currentUser.role})</span>`;
+        }
+        function applyUserAccess(){
+            renderUserSettings();
+            const role=String(currentUser?.role||'Guru').toLowerCase(), canAdmin=role==='admin', canFinance=canAdmin||role==='bendahara';
+            ['settings'].forEach(tab=>document.getElementById('tab-btn-'+tab)?.classList.toggle('hidden',!canAdmin));
+            ['siswa','tagihan','tabungan','payroll','kas'].forEach(tab=>document.getElementById('tab-btn-'+tab)?.classList.toggle('hidden',!canFinance));
+            if(!canFinance) switchTab('dashboard');
         }
 
         function toggleFullScreen() {
@@ -4738,8 +5046,8 @@
             setInterval(updateClock, 1000);
             updateClock();
 
-            // Kunci aplikasi secara otomatis saat aplikasi dibuka
-            lockApp();
+            // Tampilkan login hanya jika belum ada sesi pengguna.
+            restoreUserSession();
         };
     </script>
 </body>
